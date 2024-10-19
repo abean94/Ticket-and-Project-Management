@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Cleanup Results</title>
+</head>
+<body>
+    <h1>Ticket Cleanup Results</h1>
+    <ul>
+        {% for result in results %}
+            <li>{{ result['message'] }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

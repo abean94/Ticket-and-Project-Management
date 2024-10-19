@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <!-- Bootstrap CSS (optional, for styling) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <h2 class="text-center">Ticket Dashboard</h2>
+
+                <!-- Flash messages for success or errors -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="alert alert-{{ messages[0][0] }}">
+                            {{ messages[0][1] }}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Welcome message -->
+                <div class="mb-4 text-center">
+                    <h5>Welcome, {{ current_user.username }}!</h5>
+                    <p>You can view your tickets below.</p>
+                    <a href="{{ url_for('project_or_regular') }}" class="btn btn-success">New Ticket</a>
+                    <a href="{{ url_for('random_task') }}" class="btn btn-secondary">Get something<br/> Done!</a>
+                    <a href="{{ url_for('download_tickets_excel') }}" class="btn btn-secondary">Download Open Tickets</a>
+                    <a href="{{ url_for('projects_home') }}" class="btn btn-secondary">View Projects</a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">View All Tickets</a>
+                    <a href="{{ url_for('dashboard_today') }}" class="btn btn-secondary">View Tickets Due Today</a>
+                    <a href="{{ url_for('view_company') }}" class="btn btn-secondary">View Clients</a>
+                    <a href="{{ url_for('update_tickets')}}" class="btn btn-secondary">Clean Up Tickets</a>
+                    {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-danger">Admin</a>
+                    <a href="{{ url_for('billing_dashboard') }}" class="btn btn-danger">Billing</a>
+                    <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+                    {% endif %}
+                </div>
+
+                <!-- Ticket List -->
+                {% if tickets %}
+                    <table class="table table-striped table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Ticket #</th>
+                                <th>Subject</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Age (Days:Hours)</th>  <!-- New column for Ticket Age -->
+                                <th>Due Date</th>
+                                <th>Estimated Hours</th>
+                                <th>Project</th>
+                                <th>Phase</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in tickets %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ticket.id}}</td>
+                                    <td>{{ ticket.subject }}</td>
+                                    <td>{{ ticket.status }}</td>
+                                    <td>{{ ticket.priority }}</td>
+                                    <td>{{ ticket.age }}</td>
+                                    {% if ticket.due_date %}
+                                        <td>{{ ticket.due_date.strftime('%m/%d/%Y') }}</td>
+                                    {% else %}
+                                        <td></td>
+                                    {% endif %}
+                                    <td>{{ ticket.estimated_hours }}</td>
+
+
+                                    <td>
+                                        {% if ticket.project %}
+                                            {{ ticket.project.name }}
+                                        {% else %}
+                                            No Project
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {% if ticket.phase %}
+                                            {{ ticket.phase.name }}
+                                        {% else %}
+                                            No Phase
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <a href="{{ url_for('view_ticket', id=ticket.id) }}" class="btn btn-info btn-sm">View</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="text-center">No tickets available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Optional Bootstrap JS (for Bootstrap functionality) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
