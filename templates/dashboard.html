@@ -54,6 +54,7 @@
                                 <th>Age (Days:Hours)</th>  <!-- New column for Ticket Age -->
                                 <th>Due Date</th>
                                 <th>Estimated Hours</th>
+                                <th>Client</th>
                                 <th>Project</th>
                                 <th>Phase</th>
                                 <th>Actions</th>
@@ -74,7 +75,7 @@
                                         <td></td>
                                     {% endif %}
                                     <td>{{ ticket.estimated_hours }}</td>
-
+                                    <td>{{ticket.client.first_name}}</td>
 
                                     <td>
                                         {% if ticket.project %}

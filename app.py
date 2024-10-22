@@ -14,21 +14,13 @@ import random
 from io import BytesIO
 import pandas as pd
 import sqlite3
+from config import Config
 
 
 app = Flask(__name__)
 
 #configurations
-app.config['SECRET_KEY'] = 'secretkey'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///helpdesk.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'helpdesk@rvaitpros.com'  # Your email address
-app.config['MAIL_PASSWORD'] = 'buoekliqgvrjgjcm'   # Your email password
-app.config['MAIL_DEFAULT_SENDER'] = ('RVA IT Helpdesk', 'helpdesk@rvaitpros.com')
-app.config['MAIL_USE_SSL'] = False
+app.config.from_object(Config)
 
 mail = Mail(app)
 
@@ -329,10 +321,10 @@ def view_ticket(id):
 
             # Clear the start time after the note is added
             session.pop('start_time_utc', None)
-            if ticket.requestor_email in ['sean.gottstein@princegeorge-ag.com', 'john@jrtharpetrucking.com', 'gstjohn@pg-ag.com', 'gcarson@pg-ag.com', 'parts@jrtharpetrucking.com']:
-                send_note_email(ticket.requestor_email, ticket, note)
-            else:
-                send_note_email('andrew.bean@rvaitpros.com', ticket, note)
+
+            
+            send_note_email(ticket.requestor_email, ticket, note)
+
 
             flash('Note added successfully!', 'success')
             return redirect(url_for('view_ticket', id=ticket.id))
@@ -353,11 +345,11 @@ def view_ticket(id):
     
     # print("Ticket Properties:")
     # print(vars(ticket))  # Or use ticket.__dict__
-    # Render the template, passing the project and company details as well
-    return render_template('view_ticket.html', ticket=ticket, note_form=note_form, project=project, company=company)
 
     # Render the template, passing the project and company details as well
     return render_template('view_ticket.html', ticket=ticket, note_form=note_form, project=project, company=company)
+
+
 
 # Function to send an email when a note is added
 def send_note_email(requestor_email, ticket, note):

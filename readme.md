@@ -4,12 +4,14 @@ You will need to install the requirements from requirements.txt
 
 You will need a config file in this format
 
+
+
+# Email configurations
 config.py
 from flask_mail import Mail
 
 app = Flask(__name__)
 
-# Email configurations
 app.config['MAIL_SERVER'] = mail server
 app.config['MAIL_PORT'] = mail server port
 app.config['MAIL_USE_TLS'] = True - if your mail server uses TLS
