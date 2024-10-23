@@ -1028,7 +1028,7 @@ def execute_query(query, params=None):
     """Helper function to execute a query."""
     conn = None  # Ensure conn is defined even if the try block fails
     try:
-        conn = sqlite3.connect('instance/helpdesk.db')  # Replace with your DB connection if needed
+        conn = sqlite3.connect('/home/andrewbean94/Ticket-and-Project-Management/instance/helpdesk.db')  # Replace with your DB connection if needed
         cursor = conn.cursor()
         if params:
             cursor.execute(query, params)
@@ -1045,7 +1045,7 @@ def execute_query(query, params=None):
 @app.route('/update-tickets', methods=['GET','POST'])
 def update_tickets():
     # Get today's date dynamically in the correct format
-    today = datetime.now().strftime('%Y-%m-%d 00:00:00.0000000')
+    today = datetime.now().strftime('%Y-%m-%d 00:00:00')
 
     # Define dynamic queries
     queries = [
