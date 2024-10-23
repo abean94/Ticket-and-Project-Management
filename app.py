@@ -1026,6 +1026,7 @@ def random_number():
 
 def execute_query(query, params=None):
     """Helper function to execute a query."""
+    conn = None  # Ensure conn is defined even if the try block fails
     try:
         conn = sqlite3.connect('instance/helpdesk.db')  # Replace with your DB connection if needed
         cursor = conn.cursor()
@@ -1038,7 +1039,8 @@ def execute_query(query, params=None):
     except sqlite3.Error as e:
         return {"success": False, "message": str(e)}
     finally:
-        conn.close()
+        if conn:  # Check if conn is assigned before closing
+            conn.close()
 
 @app.route('/update-tickets', methods=['GET','POST'])
 def update_tickets():
