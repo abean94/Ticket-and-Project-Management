@@ -323,7 +323,8 @@ def view_ticket(id):
             session.pop('start_time_utc', None)
 
             
-            send_note_email(ticket.requestor_email, ticket, note)
+            if request.form.get('send_email') == 'true':
+                send_note_email(ticket.requestor_email, ticket, note)
 
 
             flash('Note added successfully!', 'success')
@@ -348,8 +349,6 @@ def view_ticket(id):
 
     # Render the template, passing the project and company details as well
     return render_template('view_ticket.html', ticket=ticket, note_form=note_form, project=project, company=company)
-
-
 
 # Function to send an email when a note is added
 def send_note_email(requestor_email, ticket, note):
@@ -735,7 +734,6 @@ def project_dashboard(project_id):
     ).all()
 
     return render_template('project_dashboard.html', project=project, phases=phases, tickets=tickets)
-
 
 @app.route('/select_project/<int:ticket_id>', methods=['GET', 'POST'])
 @login_required

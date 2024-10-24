@@ -163,7 +163,12 @@
                 {% endif %}
             </div>
         
-            <button type="submit" class="btn btn-primary">Add Note</button>
+            <button type="submit" name="send_email" value="true" class="btn btn-primary">
+                Add Note and Send Email to Customer
+            </button>
+            <button type="submit" name="send_email" value="false" class="btn btn-secondary">
+                Add Internal Note
+            </button>
         </form>
 
         <hr class="hide">
