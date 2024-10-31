@@ -27,7 +27,7 @@ class Ticket(db.Model):
     cc_emails = db.Column(db.Text, nullable=True)
     description = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(50), nullable=False, default='Open')
-    priority = db.Column(db.String(50), nullable=False, default='Low')
+    priority = db.Column(db.String(50), nullable=False, default='Important-NotUrgent')
     billable = db.Column(db.String(50), nullable = False, default = 'NB')
     
     # Foreign key to User (who created the ticket)

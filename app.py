@@ -83,13 +83,13 @@ def dashboard():
             (Ticket.status == 'In Progress', 2),
             (Ticket.status == 'Touched', 3),
             (Ticket.status == 'Closed', 4),
-            # (Ticket.status == 'On Hold', 5),
+            (Ticket.status == 'On Hold',5),
         ).asc(),
-        
         db.case(
-            (Ticket.priority == 'High', 1),
-            (Ticket.priority == 'Medium', 2),
-            (Ticket.priority == 'Low', 3),
+            (Ticket.priority == 'Important-Urgent', 1),
+            (Ticket.priority == 'Important-NotUrgent', 2),
+            (Ticket.priority == 'NotImportant-Urgent', 3),
+            (Ticket.priority == 'NotImportant-NotUrgent', 4),
         ).asc()
     ).all()
 
@@ -127,13 +127,14 @@ def download_tickets_excel():
             (Ticket.status == 'In Progress', 2),
             (Ticket.status == 'Touched', 3),
             (Ticket.status == 'Closed', 4),
-            # (Ticket.status == 'On Hold', 5),
+            (Ticket.status == 'On Hold',5),
         ).asc(),
         
         db.case(
-            (Ticket.priority == 'High', 1),
-            (Ticket.priority == 'Medium', 2),
-            (Ticket.priority == 'Low', 3),
+            (Ticket.priority == 'Important-Urgent', 1),
+            (Ticket.priority == 'Important-NotUrgent', 2),
+            (Ticket.priority == 'NotImportant-Urgent', 3),
+            (Ticket.priority == 'NotImportant-NotUrgent', 4),
         ).asc()
     ).all()
     ticket_data = []
@@ -186,9 +187,10 @@ def dashboard_today():
         ).asc(),
         
         db.case(
-            (Ticket.priority == 'High', 1),
-            (Ticket.priority == 'Medium', 2),
-            (Ticket.priority == 'Low', 3),
+            (Ticket.priority == 'Important-Urgent', 1),
+            (Ticket.priority == 'Important-NotUrgent', 2),
+            (Ticket.priority == 'NotImportant-Urgent', 3),
+            (Ticket.priority == 'NotImportant-NotUrgent', 4),
         ).asc()
     ).all()
 
@@ -344,8 +346,6 @@ def view_ticket(id):
             note.note_finish_time = note.note_finish_time.replace(tzinfo=UTC).astimezone(eastern)
 
     
-    # print("Ticket Properties:")
-    # print(vars(ticket))  # Or use ticket.__dict__
 
     # Render the template, passing the project and company details as well
     return render_template('view_ticket.html', ticket=ticket, note_form=note_form, project=project, company=company)
@@ -354,7 +354,6 @@ def view_ticket(id):
 def send_note_email(requestor_email, ticket, note):
     subject = f"New Note Added to Ticket# {ticket.id}: {ticket.subject}"
     eastern = timezone('US/Eastern')
-    print(ticket.client.first_name)
     note_start_time_eastern = note.note_start_time.replace(tzinfo=UTC).astimezone(eastern).strftime('%m/%d/%y %H:%M')
     note_finish_time_eastern = note.note_finish_time.replace(tzinfo=UTC).astimezone(eastern).strftime('%m/%d/%y %H:%M')
 
@@ -560,13 +559,13 @@ def billing_dashboard():
             (Ticket.status == 'Closed', 3),
         ).asc(),
         db.case(
-            (Ticket.priority == 'High', 1),
-            (Ticket.priority == 'Medium', 2),
-            (Ticket.priority == 'Low', 3),
+            (Ticket.priority == 'Important-Urgent', 1),
+            (Ticket.priority == 'Important-NotUrgent', 2),
+            (Ticket.priority == 'NotImportant-Urgent', 3),
+            (Ticket.priority == 'NotImportant-NotUrgent', 4),
         ).asc()
     ).all()
 
-    print(tickets)
 
     # Calculate total time spent per ticket from TicketNote
     ticket_totals = {}
@@ -605,13 +604,13 @@ def billing_review_dashboard():
             (Ticket.status == 'Closed', 3),
         ).asc(),
         db.case(
-            (Ticket.priority == 'High', 1),
-            (Ticket.priority == 'Medium', 2),
-            (Ticket.priority == 'Low', 3),
+            (Ticket.priority == 'Important-Urgent', 1),
+            (Ticket.priority == 'Important-NotUrgent', 2),
+            (Ticket.priority == 'NotImportant-Urgent', 3),
+            (Ticket.priority == 'NotImportant-NotUrgent', 4),
         ).asc()
     ).all()
 
-    print(tickets)
 
     # Calculate total time spent per ticket from TicketNote
     ticket_totals = {}
@@ -985,20 +984,23 @@ def random_task():
             (Ticket.status == 'On Hold',5),
         ).asc(),
         db.case(
-            (Ticket.priority == 'High', 1),
-            (Ticket.priority == 'Medium', 2),
-            (Ticket.priority == 'Low', 3),
+            (Ticket.priority == 'Important-Urgent', 1),
+            (Ticket.priority == 'Important-NotUrgent', 2),
+            (Ticket.priority == 'NotImportant-Urgent', 3),
+            (Ticket.priority == 'NotImportant-NotUrgent', 4),
         ).asc()
     ).all()
 
     # Create a weighted list of tickets
     weighted_tickets = []
     for ticket in tickets:
-        if ticket.priority == 'High':
+        if ticket.priority == 'Important-Urgent':
             weighted_tickets.extend([ticket] * 5)  # Add high-priority ticket 5 times
-        elif ticket.priority == 'Medium':
-            weighted_tickets.extend([ticket] * 3)  # Add medium-priority ticket 3 times
-        elif ticket.priority == 'Low':
+        elif ticket.priority == 'Important-NotUrgent':
+            weighted_tickets.extend([ticket] * 3)  # Add medium-high-priority ticket 3 times
+        elif ticket.priority == 'NotImportant-Urgent':
+            weighted_tickets.extend([ticket] * 3)  # Add medium-low-priority ticket 3 times
+        elif ticket.priority == 'NotImportant-NotUrgent':
             weighted_tickets.append(ticket)  # Add low-priority ticket 1 time
 
     number_of_tickets = len(weighted_tickets)
@@ -1047,6 +1049,7 @@ def update_tickets():
 
     # Define dynamic queries
     queries = [
+        #update due dates
         {
             "query": """UPDATE ticket 
                         SET due_date = ? 
@@ -1054,24 +1057,27 @@ def update_tickets():
                         AND status NOT IN ('Closed', 'On Hold');""",
             "params": (today, today)
         },
-        {
-            "query": """UPDATE ticket 
-                        SET priority = 'Medium' 
-                        WHERE priority = 'High' AND status <> 'Closed';""",
-            "params": None
-        },
+        #set due date to nothing when put onhold
         {
             "query": """UPDATE ticket 
                         SET due_date = NULL 
                         WHERE status = 'On Hold';""",
             "params": None
         },
+        #update status to inprogress when it was touched
         {
             "query": """UPDATE ticket 
                         SET status = 'In Progress' 
                         WHERE status = 'Touched';""",
             "params": None
-        }
+        },
+        #update accidental completed
+        {
+            "query": """update ticket 
+                        SET completed_at = Null, complete = 0 
+                        WHERE status <> 'Closed' and completed_at is not Null and complete = 1;""",
+            "params": None
+        },
     ]
 
     # Execute all queries and collect responses
@@ -1082,4 +1088,4 @@ def update_tickets():
     
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)

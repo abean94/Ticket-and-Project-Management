@@ -22,7 +22,7 @@ class TicketForm(FlaskForm):
     client_id = SelectField('Requestor', coerce=int, validators=[DataRequired()])
     requestor_email = StringField('Requestor Email', validators=[DataRequired()])
     cc_emails = TextAreaField('CC Emails (comma-separated)', validators=[Optional()])
-    priority = SelectField('Priority', choices=[('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High')], validators=[InputRequired()])
+    priority = SelectField('Priority', choices=[('Important-Urgent', 'Important-Urgent'), ('Important-NotUrgent', 'Important-NotUrgent'), ('NotImportant', 'Urgent'), ('NotImportant', 'NotUrgent')], validators=[InputRequired()])
     status = SelectField('Status', choices=[('Open', 'Open'), ('In Progress', 'In Progress'), ('Closed', 'Closed')], validators=[InputRequired()])
     phase_id = SelectField('Phase', coerce=int)  # This will be populated dynamically
     due_date = DateField('Due Date', format='%Y-%m-%d', validators=[Optional()])
@@ -37,7 +37,7 @@ class UpdateTicketForm(FlaskForm):
     requestor_email = StringField('Requestor Email', validators=[DataRequired()])
     cc_emails = TextAreaField('CC Emails (comma-separated)', validators=[Optional()])
     status = SelectField('Status', choices=[('Open', 'Open'), ('In Progress', 'In Progress'), ('Touched', 'Touched'), ('On Hold', 'On Hold')], validators=[DataRequired()])
-    priority = SelectField('Priority', choices=[('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High')], validators=[DataRequired()])
+    priority = SelectField('Priority', choices=[('Important-Urgent', 'Important-Urgent'), ('Important-NotUrgent', 'Important-NotUrgent'), ('NotImportant-Urgent', 'NotImportant-Urgent'), ('NotImportant-NotUrgent', 'NotImportant-NotUrgent')], validators=[InputRequired()])
     phase_id = SelectField('Phase', coerce=int, validators=[Optional()])  # Optional phase selection
     due_date = DateField('Due Date', format='%Y-%m-%d', validators=[Optional()])
     estimated_hours = FloatField('Estimated Hours', validators=[Optional(), NumberRange(min=0, message="Estimated hours must be positive")])
