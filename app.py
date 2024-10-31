@@ -79,18 +79,17 @@ def dashboard():
         Ticket.status != 'Closed'
     ).order_by(
         db.case(
+            (Ticket.status in ['Open', 'In Progress'], 1),
+            (Ticket.status == 'Touched', 2),
+            (Ticket.status == 'On Hold', 3),
+            (Ticket.status == 'Closed', 4),
+        ).asc(),        
+        db.case(
             (Ticket.priority == 'Important-Urgent', 1),
             (Ticket.priority == 'Important-NotUrgent', 2),
             (Ticket.priority == 'NotImportant-Urgent', 3),
             (Ticket.priority == 'NotImportant-NotUrgent', 4),
         ).asc(),
-        db.case(
-            (Ticket.status == 'Open', 1),
-            (Ticket.status == 'In Progress', 2),
-            (Ticket.status == 'Touched', 3),
-            (Ticket.status == 'Closed', 4),
-            (Ticket.status == 'On Hold',5),
-        ).asc()
     ).all()
 
     eastern = timezone('US/Eastern')
@@ -123,19 +122,17 @@ def download_tickets_excel():
         Ticket.status != 'Closed'
     ).order_by(
         db.case(
-            (Ticket.status == 'Open', 1),
-            (Ticket.status == 'In Progress', 2),
-            (Ticket.status == 'Touched', 3),
+            (Ticket.status in ['Open', 'In Progress'], 1),
+            (Ticket.status == 'Touched', 2),
+            (Ticket.status == 'On Hold', 3),
             (Ticket.status == 'Closed', 4),
-            (Ticket.status == 'On Hold',5),
-        ).asc(),
-        
+        ).asc(),        
         db.case(
             (Ticket.priority == 'Important-Urgent', 1),
             (Ticket.priority == 'Important-NotUrgent', 2),
             (Ticket.priority == 'NotImportant-Urgent', 3),
             (Ticket.priority == 'NotImportant-NotUrgent', 4),
-        ).asc()
+        ).asc(),
     ).all()
     ticket_data = []
     for ticket in tickets:
@@ -178,22 +175,20 @@ def dashboard_today():
             func.datetime('now', 'start of day', '+1 day')  # Tomorrow at 00:00:00
         )
     ).order_by(
-                
+        db.case(
+            (Ticket.status in ['Open', 'In Progress'], 1),
+            (Ticket.status == 'Touched', 2),
+            (Ticket.status == 'On Hold', 3),
+            (Ticket.status == 'Closed', 4),
+        ).asc(),        
         db.case(
             (Ticket.priority == 'Important-Urgent', 1),
             (Ticket.priority == 'Important-NotUrgent', 2),
             (Ticket.priority == 'NotImportant-Urgent', 3),
             (Ticket.priority == 'NotImportant-NotUrgent', 4),
         ).asc(),
-        db.case(
-            (Ticket.status == 'Open', 1),
-            (Ticket.status == 'In Progress', 2),
-            (Ticket.status == 'Touched', 3),
-            (Ticket.status == 'Closed', 4),
-            (Ticket.status == 'On Hold',5),
-        ).asc()
-
     ).all()
+
 
     eastern = timezone('US/Eastern')
 
@@ -555,16 +550,17 @@ def billing_dashboard():
         Ticket.completed_at <= end_date_obj
     ).order_by(
         db.case(
-            (Ticket.status == 'Open', 1),
-            (Ticket.status == 'In Progress', 2),
-            (Ticket.status == 'Closed', 3),
-        ).asc(),
+            (Ticket.status in ['Open', 'In Progress'], 1),
+            (Ticket.status == 'Touched', 2),
+            (Ticket.status == 'On Hold', 3),
+            (Ticket.status == 'Closed', 4),
+        ).asc(),        
         db.case(
             (Ticket.priority == 'Important-Urgent', 1),
             (Ticket.priority == 'Important-NotUrgent', 2),
             (Ticket.priority == 'NotImportant-Urgent', 3),
             (Ticket.priority == 'NotImportant-NotUrgent', 4),
-        ).asc()
+        ).asc(),
     ).all()
 
 
@@ -600,16 +596,17 @@ def billing_review_dashboard():
         Ticket.completed_at <= end_date_obj
     ).order_by(
         db.case(
-            (Ticket.status == 'Open', 1),
-            (Ticket.status == 'In Progress', 2),
-            (Ticket.status == 'Closed', 3),
-        ).asc(),
+            (Ticket.status in ['Open', 'In Progress'], 1),
+            (Ticket.status == 'Touched', 2),
+            (Ticket.status == 'On Hold', 3),
+            (Ticket.status == 'Closed', 4),
+        ).asc(),        
         db.case(
             (Ticket.priority == 'Important-Urgent', 1),
             (Ticket.priority == 'Important-NotUrgent', 2),
             (Ticket.priority == 'NotImportant-Urgent', 3),
             (Ticket.priority == 'NotImportant-NotUrgent', 4),
-        ).asc()
+        ).asc(),
     ).all()
 
 
