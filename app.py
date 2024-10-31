@@ -447,28 +447,25 @@ def edit_ticket(id):
     else:
         update_form.phase_id.choices = [(0, 'No Project Assigned')]
 
-    if request.method == 'POST':
-        if update_form.validate_on_submit():
-            ticket.subject = update_form.subject.data
-            ticket.description = update_form.description.data
-            ticket.status = update_form.status.data
-            ticket.priority = update_form.priority.data
-            ticket.client_id = update_form.client_id.data
-            ticket.requestor_email = update_form.requestor_email.data
-            ticket.cc_emails = update_form.cc_emails.data
-            ticket.phase_id = update_form.phase_id.data if update_form.phase_id.data != 0 else None
-            ticket.estimated_hours = update_form.estimated_hours.data
+    if request.method == 'POST' and update_form.validate_on_submit():
+        # Update the ticket fields with form data
+        ticket.subject = update_form.subject.data
+        ticket.description = update_form.description.data
+        ticket.status = update_form.status.data
+        ticket.priority = update_form.priority.data
+        ticket.client_id = update_form.client_id.data
+        ticket.requestor_email = update_form.requestor_email.data
+        ticket.cc_emails = update_form.cc_emails.data
+        ticket.phase_id = update_form.phase_id.data if update_form.phase_id.data != 0 else None
+        ticket.estimated_hours = update_form.estimated_hours.data
 
-            # Check if due_date is provided in the form, else retain the current due_date
-            if update_form.due_date.data:
-                ticket.due_date = update_form.due_date.data
-            else:
-                update_form.due_date.data = ticket.due_date  # Retain the old due date if no new date is selected
-
+        # Check if due_date is provided in the form, else retain the current due_date
+        if update_form.due_date.data:
+            ticket.due_date = update_form.due_date.data
 
         db.session.commit()
         flash('Ticket updated successfully!', 'success')
-        return redirect(url_for('view_ticket', id=ticket.id))
+        return 'Updated', 200  # Return a success status
 
     return render_template('edit_ticket.html', ticket=ticket, update_form=update_form)
 
