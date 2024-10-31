@@ -79,17 +79,17 @@ def dashboard():
         Ticket.status != 'Closed'
     ).order_by(
         db.case(
+            (Ticket.priority == 'Important-Urgent', 1),
+            (Ticket.priority == 'Important-NotUrgent', 2),
+            (Ticket.priority == 'NotImportant-Urgent', 3),
+            (Ticket.priority == 'NotImportant-NotUrgent', 4),
+        ).asc(),
+        db.case(
             (Ticket.status == 'Open', 1),
             (Ticket.status == 'In Progress', 2),
             (Ticket.status == 'Touched', 3),
             (Ticket.status == 'Closed', 4),
             (Ticket.status == 'On Hold',5),
-        ).asc(),
-        db.case(
-            (Ticket.priority == 'Important-Urgent', 1),
-            (Ticket.priority == 'Important-NotUrgent', 2),
-            (Ticket.priority == 'NotImportant-Urgent', 3),
-            (Ticket.priority == 'NotImportant-NotUrgent', 4),
         ).asc()
     ).all()
 
@@ -178,20 +178,21 @@ def dashboard_today():
             func.datetime('now', 'start of day', '+1 day')  # Tomorrow at 00:00:00
         )
     ).order_by(
+                
+        db.case(
+            (Ticket.priority == 'Important-Urgent', 1),
+            (Ticket.priority == 'Important-NotUrgent', 2),
+            (Ticket.priority == 'NotImportant-Urgent', 3),
+            (Ticket.priority == 'NotImportant-NotUrgent', 4),
+        ).asc(),
         db.case(
             (Ticket.status == 'Open', 1),
             (Ticket.status == 'In Progress', 2),
             (Ticket.status == 'Touched', 3),
             (Ticket.status == 'Closed', 4),
             (Ticket.status == 'On Hold',5),
-        ).asc(),
-        
-        db.case(
-            (Ticket.priority == 'Important-Urgent', 1),
-            (Ticket.priority == 'Important-NotUrgent', 2),
-            (Ticket.priority == 'NotImportant-Urgent', 3),
-            (Ticket.priority == 'NotImportant-NotUrgent', 4),
         ).asc()
+
     ).all()
 
     eastern = timezone('US/Eastern')
@@ -1088,4 +1089,4 @@ def update_tickets():
     
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=True)

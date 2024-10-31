@@ -6,6 +6,25 @@
     <title>Dashboard</title>
     <!-- Bootstrap CSS (optional, for styling) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .priority-high {
+            background-color: rgba(255, 0, 0, 0.8); /* Bright Red */
+            color: white
+        }
+        .priority-medium {
+            background-color: rgba(30, 144, 255, 0.8); /* Dodger Blue */
+            color: white
+
+        }
+        .priority-low {
+            background-color: rgba(255, 215, 0, 0.8); /* Golden Yellow */
+            color: black
+        }
+        .priority-minimal {
+            background-color: rgba(211, 211, 211, 0.8); /* Light Gray */
+            color: black
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
@@ -13,7 +32,7 @@
             <div class="col-md-10">
                 <h2 class="text-center">Ticket Dashboard</h2>
 
-                <!-- Flash messages for success or errors -->
+                <!-- Flash messages -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         <div class="alert alert-{{ messages[0][0] }}">
@@ -26,6 +45,7 @@
                 <div class="mb-4 text-center">
                     <h5>Welcome, {{ current_user.username }}!</h5>
                     <p>You can view your tickets below.</p>
+                    <!-- Buttons -->
                     <a href="{{ url_for('project_or_regular') }}" class="btn btn-success">New Ticket</a>
                     <a href="{{ url_for('random_task') }}" class="btn btn-secondary">Get something<br/> Done!</a>
                     <a href="{{ url_for('download_tickets_excel') }}" class="btn btn-secondary">Download Open Tickets</a>
@@ -35,15 +55,15 @@
                     <a href="{{ url_for('view_company') }}" class="btn btn-secondary">View Clients</a>
                     <a href="{{ url_for('update_tickets')}}" class="btn btn-secondary">Clean Up Tickets</a>
                     {% if current_user.role == 'admin' %}
-                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-danger">Admin</a>
-                    <a href="{{ url_for('billing_dashboard') }}" class="btn btn-danger">Billing</a>
-                    <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-danger">Admin</a>
+                        <a href="{{ url_for('billing_dashboard') }}" class="btn btn-danger">Billing</a>
+                        <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
                     {% endif %}
                 </div>
 
                 <!-- Ticket List -->
                 {% if tickets %}
-                    <table class="table table-striped table-bordered">
+                    <table class="table table-bordered">
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
@@ -51,7 +71,7 @@
                                 <th>Subject</th>
                                 <th>Status</th>
                                 <th>Priority</th>
-                                <th>Age (Days:Hours)</th>  <!-- New column for Ticket Age -->
+                                <th>Age (Days:Hours)</th>
                                 <th>Due Date</th>
                                 <th>Estimated Hours</th>
                                 <th>Client</th>
@@ -62,37 +82,28 @@
                         </thead>
                         <tbody>
                             {% for ticket in tickets %}
-                                <tr>
+                                {% if ticket.priority == 'Important-Urgent' %}
+                                    <tr class="priority-high">
+                                {% elif ticket.priority == 'Important-NotUrgent' %}
+                                    <tr class="priority-medium">
+                                {% elif ticket.priority == 'NotImportant-Urgent' %}
+                                    <tr class="priority-low">
+                                {% elif ticket.priority == 'NotImportant-NotUrgent' %}
+                                    <tr class="priority-minimal">
+                                {% else %}
+                                    <tr>
+                                {% endif %}
                                     <td>{{ loop.index }}</td>
                                     <td>{{ticket.id}}</td>
                                     <td>{{ ticket.subject }}</td>
                                     <td>{{ ticket.status }}</td>
                                     <td>{{ ticket.priority }}</td>
                                     <td>{{ ticket.age }}</td>
-                                    {% if ticket.due_date %}
-                                        <td>{{ ticket.due_date.strftime('%m/%d/%Y') }}</td>
-                                    {% else %}
-                                        <td></td>
-                                    {% endif %}
+                                    <td>{{ ticket.due_date.strftime('%m/%d/%Y') if ticket.due_date else '' }}</td>
                                     <td>{{ ticket.estimated_hours }}</td>
                                     <td>{{ticket.client.first_name}}</td>
-
-                                    <td>
-                                        {% if ticket.project %}
-                                            {{ ticket.project.name }}
-                                        {% else %}
-                                            No Project
-                                        {% endif %}
-                                    </td>
-
-                                    <td>
-                                        {% if ticket.phase %}
-                                            {{ ticket.phase.name }}
-                                        {% else %}
-                                            No Phase
-                                        {% endif %}
-                                    </td>
-
+                                    <td>{{ ticket.project.name if ticket.project else 'No Project' }}</td>
+                                    <td>{{ ticket.phase.name if ticket.phase else 'No Phase' }}</td>
                                     <td>
                                         <a href="{{ url_for('view_ticket', id=ticket.id) }}" class="btn btn-info btn-sm">View</a>
                                     </td>
@@ -107,7 +118,8 @@
         </div>
     </div>
 
-    <!-- Optional Bootstrap JS (for Bootstrap functionality) -->
+    <!-- Optional Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+</html>
 </html>
