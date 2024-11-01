@@ -35,6 +35,17 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+
+        }
+        a, .btn {
+            padding: 5px;
+            margin: 3px;
+            width: 100px; /* Adjust the width as needed */
+            height: 40px; /* Adjust the height as needed */
+            display: inline-block; /* Ensures buttons keep their block-level dimensions */
+            text-align: center; /* Centers the text */
+            line-height: 40px; /* Centers the text vertically */
+            margin: 5px; /* Adds spacing between buttons */
         }
         @media (max-width: 1750px) {
             .sticky-buttons {
@@ -167,17 +178,23 @@
 
     <!-- Sticky Buttons -->
     <div class="sticky-buttons">
-        <a href="{{ url_for('edit_ticket', id=ticket.id) }}" class="btn btn-warning">Edit Ticket</a>
-        <a href="#" class="btn btn-secondary" onclick="window.close(); return false;">Back to Dashboard</a>
-        <button type="button" class="btn btn-info" onclick="scrollToBottom()">Add a Note</button>
+        <form method="POST" action="{{ url_for('complete_ticket', id=ticket.id) }}">
+            <button type="submit" name="complete" class="btn btn-success w-100">Mark Complete</button>
+        </form>
+        <a href="{{ url_for('edit_ticket', id=ticket.id) }}" class="btn btn-warning w-100">Edit Ticket</a>
+        <a href="#" class="btn btn-secondary w-100" onclick="window.close(); return false;">Back to Dashboard</a>
+        <button type="button" class="btn btn-info w-100" onclick="scrollToBottom()">Add a Note</button> 
     </div>
 
     <!-- Hamburger Menu for smaller screens -->
     <div class="hamburger-menu">
         <button class="btn btn-dark" onclick="toggleMenu()">☰ Menu</button>
         <div class="menu-content">
+            <form method="POST" action="{{ url_for('complete_ticket', id=ticket.id) }}">
+                <button type="submit" name="complete" class="btn btn-success w-100">Mark Complete</button>
+            </form>
             <a href="{{ url_for('edit_ticket', id=ticket.id) }}" class="btn btn-warning w-100">Edit Ticket</a>
-            <a href="#" class="btn btn-secondary" onclick="window.close(); return false;">Back to Dashboard</a>
+            <a href="#" class="btn btn-secondary w-100" onclick="window.close(); return false;">Back to Dashboard</a>
             <button type="button" class="btn btn-info w-100" onclick="scrollToBottom()">Add a Note</button>
         </div>
     </div>
