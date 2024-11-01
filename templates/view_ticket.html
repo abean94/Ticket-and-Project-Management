@@ -137,6 +137,7 @@
                                 {% endif %}
                             </p>
                             <p><strong>Note Content:</strong> {{ note.content }}</p>
+                            <a href="{{ url_for('edit_note', note_id=note.id) }}" class="btn btn-warning ms-auto">Edit Note</a>
                         </div>
                     </li>
                 {% endfor %}
@@ -183,6 +184,17 @@
         </form>
         <a href="{{ url_for('edit_ticket', id=ticket.id) }}" class="btn btn-warning w-100">Edit Ticket</a>
         <a href="#" class="btn btn-secondary w-100" onclick="window.close(); return false;">Back to Dashboard</a>
+        <a href="{{ url_for('select_project', ticket_id=ticket.id) }}" class="btn btn-warning w-100">Convert to Project Ticket</a>
+        <form method="POST" action="{{ url_for('toggle_billable', ticket_id=ticket.id) }}">
+            <button type="submit" class="btn btn-success w-100">
+                {% if ticket.billable == "NB" %}
+                    Mark as Billable
+                {% else %}
+                    Mark as Non-Billable
+                {% endif %}
+            </button>
+        </form>
+
         <button type="button" class="btn btn-info w-100" onclick="scrollToBottom()">Add a Note</button> 
     </div>
 
