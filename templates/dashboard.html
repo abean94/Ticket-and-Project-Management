@@ -136,6 +136,45 @@
         .navbar-custom .nav-link {
             color: white;
         }
+        /* Mobile view adjustments */
+        @media (max-width: 768px) {
+            .ticket-item {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                gap: 10px;
+                padding: 10px;
+            }
+            .ticket-details, .ticket-user, .ticket-time, .ticket-type {
+                text-align: left;
+                justify-content: flex-start;
+            }
+            .btn-view {
+                justify-content: flex-start;
+            }
+            .ticket-state {
+                width: 30px;
+                height: 30px;
+            }
+            .ticket-subject {
+                font-size: 14px;
+            }
+            .ticket-info {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .tickets-container {
+                padding: 10px;
+            }
+            .navbar-custom .navbar-brand img {
+                height: 24px;
+                margin-right: 5px;
+            }
+            .btn-view {
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
