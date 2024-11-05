@@ -277,5 +277,35 @@
         );
     }
     </script>
+    <script>
+        document.addEventListener('keydown', function (event) {
+            // Check for 'Alt + R' key combination (you can customize this)
+            if (event.altKey && event.key === 'r') {
+                // Open the '/random_task' route in a new window
+                window.open(
+                    "{{ url_for('random_task') }}",
+                    'randomTaskWindow',
+                    'width=800,height=600,resizable=yes,scrollbars=yes,status=yes'
+                );
+                // Prevent the default action (optional)
+                event.preventDefault();
+            }
+        });
+    </script>
+    <script>
+        document.addEventListener('keydown', function (event) {
+            // Check for 'Alt + R' key combination (you can customize this)
+            if (event.altKey && event.key === 'n') {
+                // Open the '/random_task' route in a new window
+                window.open(
+                    "{{ url_for('random_number') }}",
+                    'randomTaskWindow',
+                    'width=800,height=600,resizable=yes,scrollbars=yes,status=yes'
+                );
+                // Prevent the default action (optional)
+                event.preventDefault();
+            }
+        });
+    </script>
 </body>
 </html>
