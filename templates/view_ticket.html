@@ -77,6 +77,11 @@
                 display: none;
             }
         }
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -199,13 +204,13 @@
     </div>
 
     <!-- Hamburger Menu for smaller screens -->
-    <div class="hamburger-menu">
+    <div class="hamburger-menu no-print">
         <button class="btn btn-dark" onclick="toggleMenu()">☰ Menu</button>
         <div class="menu-content">
-            <form method="POST" action="{{ url_for('complete_ticket', id=ticket.id) }}">
+            <form method="POST" action="{{ url_for('complete_ticket', id=ticket.id) }}" class="no-print">
                 <button type="submit" name="complete" class="btn btn-success w-100">Mark Complete</button>
             </form>
-            <a href="{{ url_for('edit_ticket', id=ticket.id) }}" class="btn btn-warning w-100">Edit Ticket</a>
+            <a href="{{ url_for('edit_ticket', id=ticket.id) }}" class="btn btn-warning w-100 no-print">Edit Ticket</a>
             <a href="#" class="btn btn-secondary w-100" onclick="window.close(); return false;">Back to Dashboard</a>
             <button type="button" class="btn btn-info w-100" onclick="scrollToBottom()">Add a Note</button>
         </div>
