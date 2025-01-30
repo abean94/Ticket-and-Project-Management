@@ -101,7 +101,7 @@
 
             <!-- Right Column -->
             <div class="col-md-6">
-                <p><strong>Due Date:</strong> 
+                <p><strong>Due Date:</strong>
                     {% if ticket.due_date %}
                         {{ ticket.due_date.strftime('%m/%d/%y %H:%M') }}
                     {% else %}
@@ -135,7 +135,7 @@
                                     {% set days = total_minutes // 1440 %}
                                     {% set hours = (total_minutes % 1440) // 60 %}
                                     {% set minutes = total_minutes % 60 %}
-                                    
+
                                     {% if days > 0 %}{{ days }} days, {% endif %}{{ hours }} hours, {{ minutes }} minutes
                                 {% else %}
                                     Not available
@@ -200,7 +200,7 @@
             </button>
         </form>
 
-        <button type="button" class="btn btn-info w-100" onclick="scrollToBottom()">Add a Note</button> 
+        <button type="button" class="btn btn-info w-100" onclick="scrollToBottom()">Add a Note</button>
     </div>
 
     <!-- Hamburger Menu for smaller screens -->
