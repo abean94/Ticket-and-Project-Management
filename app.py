@@ -15,6 +15,7 @@ from io import BytesIO
 import pandas as pd
 import sqlite3
 from config import Config
+from google_calendar import create_event
 
 
 app = Flask(__name__)
@@ -33,6 +34,8 @@ migrate = Migrate(app, db)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -316,6 +319,17 @@ def view_ticket(id):
             )
             db.session.add(note)
             db.session.commit()
+
+            start_time_google = note_start_time.isoformat()
+            end_time_google = note_finish_time.isoformat()
+
+            create_event(
+                summary=ticket.subject, 
+                start_time=start_time_google, 
+                end_time=end_time_google, 
+                description=note_form.content.data, 
+                location=''
+            )
 
             # Clear the start time after the note is added
             session.pop('start_time_utc', None)
