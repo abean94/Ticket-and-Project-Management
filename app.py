@@ -16,6 +16,8 @@ import pandas as pd
 import sqlite3
 from config import Config
 from google_calendar import create_event
+from google_auth_oauthlib.flow import Flow
+import pickle
 
 
 app = Flask(__name__)
@@ -35,6 +37,10 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+
+SCOPES = ['https://www.googleapis.com/auth/calendar.events']
+CLIENT_SECRET_PATH = '/home/andrewbean94/Ticket-and-Project-Management/client_secret_634441787369-rst6o54jsg9t6tkkc1t5huvnl44fgka9.apps.googleusercontent.com.json'  # Update with actual path
+TOKEN_PATH = '/home/andrewbean94/Ticket-and-Project-Management/token.pickle'  # Update with actual path
 
 
 @login_manager.user_loader
@@ -1095,6 +1101,35 @@ def update_tickets():
     # Pass the results to the template for rendering
     return render_template('clean_up_tickets.html', results=results)
     
+
+@app.route("/oauth2callback")
+def oauth2callback():
+    # Create a new flow instance inside the route
+    flow = Flow.from_client_secrets_file(
+        CLIENT_SECRET_PATH,
+        SCOPES,
+        redirect_uri="https://tickets.rvaitpros.com/oauth2callback"
+    )
+
+    # Exchange authorization response for credentials
+    flow.fetch_token(authorization_response=request.url)
+    creds = flow.credentials
+
+    # Save credentials to a file instead of session
+    with open(TOKEN_PATH, 'wb') as token:
+        pickle.dump(creds, token)
+
+    return redirect("/")
+
+def creds_to_dict(creds):
+    return {
+        'token': creds.token,
+        'refresh_token': creds.refresh_token,
+        'token_uri': creds.token_uri,
+        'client_id': creds.client_id,
+        'client_secret': creds.client_secret,
+        'scopes': creds.scopes
+    }
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
