@@ -206,7 +206,7 @@
         <a href="{{ url_for('projects_home') }}" class="btn btn-secondary mb-2">View Projects</a>
         <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mb-2">View All Tickets</a>
         <a href="{{ url_for('dashboard_today') }}" class="btn btn-secondary mb-2">Tickets Due Today</a>
-        <a href="{{ url_for('calednar') }}" class="btn btn-secondary mb-2">Time Tracking</a>
+        <a href="{{ url_for('calendar') }}" class="btn btn-secondary mb-2">Time Tracking</a>
         <a href="{{ url_for('view_company') }}" class="btn btn-secondary mb-2">View Clients</a>
         <a href="{{ url_for('update_tickets') }}" class="btn btn-secondary mb-2">Clean Up Tickets</a>
         {% if current_user.role == 'admin' %}
