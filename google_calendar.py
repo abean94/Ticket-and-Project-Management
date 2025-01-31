@@ -10,17 +10,19 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 # Define the scopes required for Google Calendar API
-SCOPES = ['https://www.googleapis.com/auth/calendar.events']
+SCOPES = [
+    'https://www.googleapis.com/auth/calendar',
+    'https://www.googleapis.com/auth/calendar.events',
+    'https://www.googleapis.com/auth/calendar.readonly'
+]
 
-BASE_DIR = "/home/andrewbean94/Ticket-and-Project-Management"  # Adjust this to match your directory
+BASE_DIR = r"C:\Users\andre\OneDrive - RVA IT Pros\Documents\Work\Ticket and Project Management"  # Adjust this to match your directory
 TOKEN_PATH = os.path.join(BASE_DIR, "token.pickle")
 CLIENT_SECRET_PATH = os.path.join(BASE_DIR, "client_secret_634441787369-rst6o54jsg9t6tkkc1t5huvnl44fgka9.apps.googleusercontent.com.json")  # Rename your client secret file
 
 
 def get_calendar_service():
     creds = None
-    token_path = r'C:\Users\andre\OneDrive - RVA IT Pros\Documents\Work\Ticket and Project Management\token.pickle'
-
     # Load credentials if previously saved
     if os.path.exists(TOKEN_PATH):
         with open(TOKEN_PATH, 'rb') as token:
@@ -37,8 +39,7 @@ def get_calendar_service():
             SCOPES,
             redirect_uri='https://tickets.rvaitpros.com/oauth2callback'
         )
-        creds = flow.run_console()  # Use console-based authentication instead of localhost
-
+        creds = flow.run_local_server(port=0)
 
         # Save the new credentials
         with open(TOKEN_PATH, 'wb') as token:
@@ -62,8 +63,19 @@ def create_event(summary, start_time, end_time, description='', location=''):
             ],
         },
     }
-    event = service.events().insert(calendarId='primary', body=event).execute()
+    calendar_id = "c_9ee15e1619ed93b65bce56d3bbd5388b26f072fbf905cedaa7d502544476d2bf@group.calendar.google.com"  # Replace with your desired calendar's ID
+    event = service.events().insert(calendarId=calendar_id, body=event).execute()
     print(f'Event created: {event.get('htmlLink')}')
+
+# def list_calendars():
+#     service = get_calendar_service()
+#     calendars = service.calendarList().list().execute()
+    
+#     for calendar in calendars['items']:
+#         print(f"Calendar Name: {calendar['summary']}, ID: {calendar['id']}")
+
+
+# list_calendars()
 
 
 
