@@ -16,7 +16,7 @@ SCOPES = [
     'https://www.googleapis.com/auth/calendar.readonly'
 ]
 
-BASE_DIR = r"C:\Users\andre\OneDrive - RVA IT Pros\Documents\Work\Ticket and Project Management"  # Adjust this to match your directory
+BASE_DIR =  '/home/andrewbean94/Ticket-and-Project-Management' # Adjust this to match your directory
 TOKEN_PATH = os.path.join(BASE_DIR, "token.pickle")
 CLIENT_SECRET_PATH = os.path.join(BASE_DIR, "client_secret_634441787369-rst6o54jsg9t6tkkc1t5huvnl44fgka9.apps.googleusercontent.com.json")  # Rename your client secret file
 
@@ -65,7 +65,6 @@ def create_event(summary, start_time, end_time, description='', location=''):
     }
     calendar_id = "c_9ee15e1619ed93b65bce56d3bbd5388b26f072fbf905cedaa7d502544476d2bf@group.calendar.google.com"  # Replace with your desired calendar's ID
     event = service.events().insert(calendarId=calendar_id, body=event).execute()
-    print(f'Event created: {event.get('htmlLink')}')
 
 # def list_calendars():
 #     service = get_calendar_service()
