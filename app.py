@@ -48,6 +48,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 @app.route('/register', methods=['GET', 'POST'])
+@login_required
 def register():
     form = RegistrationForm()
     if form.validate_on_submit():
