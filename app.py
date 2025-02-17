@@ -719,7 +719,7 @@ def create_phase(project_id):
 @app.route('/projects')
 @login_required
 def projects_home():
-    projects = Project.query.all()
+    projects = Project.query.filter(Project.status != 'Closed').all()
     session.pop('start_time_utc', None)
     return render_template('projects_home.html', projects=projects)
 
