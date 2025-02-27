@@ -105,27 +105,34 @@ def dashboard():
     ).all()
 
     eastern = timezone('US/Eastern')
-
     current_time = datetime.now(UTC)
 
-    # Calculate the age of each ticket
+    # ✅ Fix: Handle NULL/Invalid timestamps
     for ticket in tickets:
         if ticket.created_at:
-            if isinstance(ticket.created_at, str):  # Convert string to datetime if necessary
-                ticket.created_at = datetime.fromisoformat(ticket.created_at)
+            try:
+                # ✅ Convert string timestamps safely
+                if isinstance(ticket.created_at, str):
+                    if ticket.created_at not in [None, "0000-00-00 00:00:00"]:
+                        ticket.created_at = datetime.strptime(ticket.created_at, "%Y-%m-%d %H:%M:%S")
+                    else:
+                        ticket.created_at = None  # Handle invalid timestamps
 
-            ticket.created_at = ticket.created_at.replace(tzinfo=UTC).astimezone(eastern)
+                # ✅ Ensure proper timezone conversion
+                if ticket.created_at:
+                    ticket.created_at = ticket.created_at.replace(tzinfo=UTC).astimezone(eastern)
 
-            # Calculate ticket age
-            age = current_time - ticket.created_at.astimezone(UTC)
-            days = age.days
-            hours = age.seconds // 3600  # Get hours from seconds
-            ticket.age = f"{days}d:{hours}h"
+                    # ✅ Calculate ticket age
+                    age = current_time - ticket.created_at.astimezone(UTC)
+                    days = age.days
+                    hours = age.seconds // 3600  # Get hours from seconds
+                    ticket.age = f"{days}d:{hours}h"
+                else:
+                    ticket.age = "N/A"  # Handle cases with missing timestamps
 
-    # Convert `created_at` to Eastern Time for display purposes
-    for ticket in tickets:
-        if ticket.created_at:
-            ticket.created_at = ticket.created_at.astimezone(eastern)
+            except ValueError:
+                ticket.created_at = None  # Handle any parsing errors
+                ticket.age = "N/A"
 
     session.pop('start_time_utc', None)
     return render_template('dashboard.html', tickets=tickets)
@@ -184,16 +191,15 @@ def download_tickets_excel():
 @app.route('/')
 @login_required
 def dashboard_today():
-
-    # Custom ordering for status: Open > In Progress > Closed
+    # ✅ Fix: Correct MySQL date filter (Includes today and tomorrow)
     tickets = Ticket.query.filter(
         Ticket.due_date.between(
-            func.date(func.now()),  # ✅ Fix: Gets today's date at 00:00:00
-            func.date(func.now())  # ✅ Fix: Gets tomorrow's date
+            func.date(func.now()),  
+            func.timestampadd(text('SECOND'), 86399, func.date(func.now()))  # ✅ 11:59:59 PM today
         )
     ).order_by(
         db.case(
-            (Ticket.status in ['Open', 'In Progress'], 1),
+            (Ticket.status.in_(['Open', 'In Progress']), 1),
             (Ticket.status == 'Touched', 2),
             (Ticket.status == 'On Hold', 3),
             (Ticket.status == 'Closed', 4),
@@ -206,31 +212,35 @@ def dashboard_today():
         ).asc(),
     ).all()
 
-
     eastern = timezone('US/Eastern')
-
     current_time = datetime.now(UTC)
 
-
-
-    # Calculate the age of each ticket
+    # ✅ Fix: Handle NULL/Invalid timestamps
     for ticket in tickets:
         if ticket.created_at:
-            if isinstance(ticket.created_at, str):  # Convert string to datetime if necessary
-                ticket.created_at = datetime.fromisoformat(ticket.created_at)
+            try:
+                # ✅ Convert string timestamps safely
+                if isinstance(ticket.created_at, str):
+                    if ticket.created_at not in [None, "0000-00-00 00:00:00"]:
+                        ticket.created_at = datetime.strptime(ticket.created_at, "%Y-%m-%d %H:%M:%S")
+                    else:
+                        ticket.created_at = None  # Handle invalid timestamps
 
-            ticket.created_at = ticket.created_at.replace(tzinfo=UTC).astimezone(eastern)
+                # ✅ Ensure proper timezone conversion
+                if ticket.created_at:
+                    ticket.created_at = ticket.created_at.replace(tzinfo=UTC).astimezone(eastern)
 
-            # Calculate ticket age
-            age = current_time - ticket.created_at.astimezone(UTC)
-            days = age.days
-            hours = age.seconds // 3600  # Get hours from seconds
-            ticket.age = f"{days}d:{hours}h"
+                    # ✅ Calculate ticket age
+                    age = current_time - ticket.created_at.astimezone(UTC)
+                    days = age.days
+                    hours = age.seconds // 3600  # Get hours from seconds
+                    ticket.age = f"{days}d:{hours}h"
+                else:
+                    ticket.age = "N/A"  # Handle cases with missing timestamps
 
-    # Convert `created_at` to Eastern Time for display purposes
-    for ticket in tickets:
-        if ticket.created_at:
-            ticket.created_at = ticket.created_at.astimezone(eastern)
+            except ValueError:
+                ticket.created_at = None  # Handle any parsing errors
+                ticket.age = "N/A"
 
     session.pop('start_time_utc', None)
     return render_template('dashboard.html', tickets=tickets)
@@ -1088,41 +1098,39 @@ def update_tickets():
 
     # Define dynamic queries
     queries = [
-        #update due dates
+        # ✅ Fix: Replace `?` with `%s`
         {
             "query": """UPDATE ticket
-                        SET due_date = ?
+                        SET due_date = %s
                         WHERE due_date < %s
                         AND status NOT IN ('Closed', 'On Hold');""",
             "params": (today, today)
         },
-        #set due date to nothing when put onhold
         {
             "query": """UPDATE ticket
                         SET due_date = NULL
                         WHERE status = 'On Hold';""",
             "params": None
         },
-        #update status to inprogress when it was touched
         {
             "query": """UPDATE ticket
                         SET status = 'In Progress'
                         WHERE status = 'Touched';""",
             "params": None
         },
-        #update accidental completed
         {
-            "query": """update ticket
-                        SET completed_at = Null, complete = 0
-                        WHERE status <> 'Closed' and completed_at is not Null and complete = 1;""",
+            "query": """UPDATE ticket
+                        SET completed_at = NULL, complete = 0
+                        WHERE status <> 'Closed' AND completed_at IS NOT NULL AND complete = 1;""",
             "params": None
         },
     ]
 
-    # Execute all queries and collect responses
-    results = [execute_query(q["query"], q["params"]) for q in queries]
+    print(queries)  # Debugging - Check if queries are correct
 
-    # Pass the results to the template for rendering
+    # ✅ Fix: Ensure `None` queries pass correctly
+    results = [execute_query(q["query"], q["params"] or ()) for q in queries]
+
     return render_template('clean_up_tickets.html', results=results)
 
 

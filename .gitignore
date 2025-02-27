@@ -6,6 +6,7 @@ static/
 venv/
 mysql_compatible_dump.sql
 client_secret_634441787369-bsfs8tlp7mc7hlujgcuvn992ur8rfbjp.apps.googleusercontent.com.json
+client_secret_634441787369-rst6o54jsg9t6tkkc1t5huvnl44fgka9.apps.googleusercontent.com.json
 dump.py
 dump.sql
 my_sql.py
