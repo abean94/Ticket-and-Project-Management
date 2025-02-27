@@ -9,7 +9,9 @@ from models import db, User, Ticket, TicketNote, Project, Phase, Client, Company
 from datetime import datetime, timezone
 from flask_migrate import Migrate
 from sqlalchemy import func
+from sqlalchemy.sql import text
 from pytz import timezone, UTC
+import pymysql
 import random
 from io import BytesIO
 import pandas as pd
@@ -86,14 +88,14 @@ def logout():
 def dashboard():
     # Custom ordering for status: Open > In Progress > Closed
     tickets = Ticket.query.filter(
-        Ticket.status != 'Closed'
+        ~Ticket.status.in_(['Closed'])  # ✅ Corrected
     ).order_by(
         db.case(
-            (Ticket.status in ['Open', 'In Progress'], 1),
+            (Ticket.status.in_(['Open', 'In Progress']), 1),
             (Ticket.status == 'Touched', 2),
             (Ticket.status == 'On Hold', 3),
             (Ticket.status == 'Closed', 4),
-        ).asc(),        
+        ).asc(),
         db.case(
             (Ticket.priority == 'Important-Urgent', 1),
             (Ticket.priority == 'Important-NotUrgent', 2),
@@ -109,6 +111,9 @@ def dashboard():
     # Calculate the age of each ticket
     for ticket in tickets:
         if ticket.created_at:
+            if isinstance(ticket.created_at, str):  # Convert string to datetime if necessary
+                ticket.created_at = datetime.fromisoformat(ticket.created_at)
+
             ticket.created_at = ticket.created_at.replace(tzinfo=UTC).astimezone(eastern)
 
             # Calculate ticket age
@@ -117,12 +122,14 @@ def dashboard():
             hours = age.seconds // 3600  # Get hours from seconds
             ticket.age = f"{days}d:{hours}h"
 
+    # Convert `created_at` to Eastern Time for display purposes
     for ticket in tickets:
         if ticket.created_at:
-            ticket.created_at = ticket.created_at.replace(tzinfo=UTC).astimezone(eastern)
+            ticket.created_at = ticket.created_at.astimezone(eastern)
 
     session.pop('start_time_utc', None)
     return render_template('dashboard.html', tickets=tickets)
+
 @app.route('/download_tickets_excel')
 @login_required
 def download_tickets_excel():
@@ -136,7 +143,7 @@ def download_tickets_excel():
             (Ticket.status == 'Touched', 2),
             (Ticket.status == 'On Hold', 3),
             (Ticket.status == 'Closed', 4),
-        ).asc(),        
+        ).asc(),
         db.case(
             (Ticket.priority == 'Important-Urgent', 1),
             (Ticket.priority == 'Important-NotUrgent', 2),
@@ -181,8 +188,8 @@ def dashboard_today():
     # Custom ordering for status: Open > In Progress > Closed
     tickets = Ticket.query.filter(
         Ticket.due_date.between(
-            func.datetime('now', 'start of day'),  # Today at 00:00:00
-            func.datetime('now', 'start of day', '+1 day')  # Tomorrow at 00:00:00
+            func.date(func.now()),  # ✅ Fix: Gets today's date at 00:00:00
+            func.date(func.now())  # ✅ Fix: Gets tomorrow's date
         )
     ).order_by(
         db.case(
@@ -190,7 +197,7 @@ def dashboard_today():
             (Ticket.status == 'Touched', 2),
             (Ticket.status == 'On Hold', 3),
             (Ticket.status == 'Closed', 4),
-        ).asc(),        
+        ).asc(),
         db.case(
             (Ticket.priority == 'Important-Urgent', 1),
             (Ticket.priority == 'Important-NotUrgent', 2),
@@ -209,6 +216,9 @@ def dashboard_today():
     # Calculate the age of each ticket
     for ticket in tickets:
         if ticket.created_at:
+            if isinstance(ticket.created_at, str):  # Convert string to datetime if necessary
+                ticket.created_at = datetime.fromisoformat(ticket.created_at)
+
             ticket.created_at = ticket.created_at.replace(tzinfo=UTC).astimezone(eastern)
 
             # Calculate ticket age
@@ -217,9 +227,10 @@ def dashboard_today():
             hours = age.seconds // 3600  # Get hours from seconds
             ticket.age = f"{days}d:{hours}h"
 
+    # Convert `created_at` to Eastern Time for display purposes
     for ticket in tickets:
         if ticket.created_at:
-            ticket.created_at = ticket.created_at.replace(tzinfo=UTC).astimezone(eastern)
+            ticket.created_at = ticket.created_at.astimezone(eastern)
 
     session.pop('start_time_utc', None)
     return render_template('dashboard.html', tickets=tickets)
@@ -298,7 +309,7 @@ def view_ticket(id):
     # Store the start time in UTC in the session when user views the ticket
     if 'start_time_utc' not in session:
         session['start_time_utc'] = datetime.now(UTC).isoformat()  # Store as ISO format string
-    
+
     start_time_utc = datetime.fromisoformat(session['start_time_utc'])
 
 
@@ -319,9 +330,9 @@ def view_ticket(id):
 
             # Create and store the new note
             note = TicketNote(
-                content=note_form.content.data, 
-                ticket_id=ticket.id, 
-                note_start_time=note_start_time, 
+                content=note_form.content.data,
+                ticket_id=ticket.id,
+                note_start_time=note_start_time,
                 note_finish_time=note_finish_time
             )
             db.session.add(note)
@@ -331,17 +342,17 @@ def view_ticket(id):
             end_time_google = note_finish_time.isoformat()
 
             create_event(
-                summary=ticket.subject, 
-                start_time=start_time_google, 
-                end_time=end_time_google, 
-                description=note_form.content.data, 
+                summary=ticket.subject,
+                start_time=start_time_google,
+                end_time=end_time_google,
+                description=note_form.content.data,
                 location=''
             )
 
             # Clear the start time after the note is added
             session.pop('start_time_utc', None)
 
-            
+
             if request.form.get('send_email') == 'true':
                 send_note_email(ticket.requestor_email, ticket, note)
 
@@ -362,7 +373,7 @@ def view_ticket(id):
         if note.note_finish_time:
             note.note_finish_time = note.note_finish_time.replace(tzinfo=UTC).astimezone(eastern)
 
-    
+
 
     # Render the template, passing the project and company details as well
     return render_template('view_ticket.html', ticket=ticket, note_form=note_form, project=project, company=company)
@@ -524,7 +535,7 @@ def edit_note(note_id):
 @login_required
 def toggle_billable(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
-    
+
     # Toggle the billable status
     if ticket.billable == 'NB':
         ticket.billable = 'R'  # Convert to Billable
@@ -572,7 +583,7 @@ def billing_dashboard():
             (Ticket.status == 'Touched', 2),
             (Ticket.status == 'On Hold', 3),
             (Ticket.status == 'Closed', 4),
-        ).asc(),        
+        ).asc(),
         db.case(
             (Ticket.priority == 'Important-Urgent', 1),
             (Ticket.priority == 'Important-NotUrgent', 2),
@@ -618,7 +629,7 @@ def billing_review_dashboard():
             (Ticket.status == 'Touched', 2),
             (Ticket.status == 'On Hold', 3),
             (Ticket.status == 'Closed', 4),
-        ).asc(),        
+        ).asc(),
         db.case(
             (Ticket.priority == 'Important-Urgent', 1),
             (Ticket.priority == 'Important-NotUrgent', 2),
@@ -825,7 +836,7 @@ def edit_project(project_id):
         project.name = form.name.data
         project.description = form.description.data
         project.status = form.status.data
-        
+
         # Update the company_id with the selected company from the form
         project.company_id = form.company_id.data
 
@@ -987,8 +998,8 @@ def admin_dashboard():
 def random_task():
     tickets = Ticket.query.filter(
         Ticket.due_date.between(
-            func.datetime('now', 'start of day'),  # Today at 00:00:00
-            func.datetime('now', 'start of day', '+1 day')  # Tomorrow at 00:00:00
+            func.date(func.now()),  # ✅ Fix: Gets today's date at 00:00:00
+            func.date(func.now() + text('INTERVAL 1 DAY'))  # ✅ Fix: Gets tomorrow's date
         ),
          ~Ticket.status.in_(['Touched', 'Closed', 'On Hold'])  # Exclude tickets with status 'Touched' or 'Closed'
     ).order_by(
@@ -1037,25 +1048,37 @@ def random_number():
         random_int = random.randint(1,form.number.data)
 
     return render_template('random_number_generator.html', form=form, random_int=random_int)
-    
+
 
 
 def execute_query(query, params=None):
-    """Helper function to execute a query."""
-    conn = None  # Ensure conn is defined even if the try block fails
+    """Helper function to execute a query on MySQL."""
+    conn = None
     try:
-        conn = sqlite3.connect('/home/andrewbean94/Ticket-and-Project-Management/instance/helpdesk.db')  # Replace with your DB connection if needed
+        # Connect to MySQL
+        conn = pymysql.connect(
+            host=Config.DB_HOST,
+            user=Config.DB_USER,
+            password=Config.DB_PASSWORD,
+            database=Config.DB_NAME,
+            cursorclass=pymysql.cursors.DictCursor  # Returns results as dictionaries
+        )
         cursor = conn.cursor()
+
+        # Execute query
         if params:
             cursor.execute(query, params)
         else:
             cursor.execute(query)
+
+        # Commit if it's an INSERT, UPDATE, or DELETE
         conn.commit()
-        return {"success": True, "message": "Query executed successfully"}
-    except sqlite3.Error as e:
+
+        return {"success": True, "message": "Query executed successfully", "affected_rows": cursor.rowcount}
+    except pymysql.MySQLError as e:
         return {"success": False, "message": str(e)}
     finally:
-        if conn:  # Check if conn is assigned before closing
+        if conn:
             conn.close()
 
 @app.route('/update-tickets', methods=['GET','POST'])
@@ -1067,30 +1090,30 @@ def update_tickets():
     queries = [
         #update due dates
         {
-            "query": """UPDATE ticket 
-                        SET due_date = ? 
-                        WHERE due_date < ? 
+            "query": """UPDATE ticket
+                        SET due_date = ?
+                        WHERE due_date < %s
                         AND status NOT IN ('Closed', 'On Hold');""",
             "params": (today, today)
         },
         #set due date to nothing when put onhold
         {
-            "query": """UPDATE ticket 
-                        SET due_date = NULL 
+            "query": """UPDATE ticket
+                        SET due_date = NULL
                         WHERE status = 'On Hold';""",
             "params": None
         },
         #update status to inprogress when it was touched
         {
-            "query": """UPDATE ticket 
-                        SET status = 'In Progress' 
+            "query": """UPDATE ticket
+                        SET status = 'In Progress'
                         WHERE status = 'Touched';""",
             "params": None
         },
         #update accidental completed
         {
-            "query": """update ticket 
-                        SET completed_at = Null, complete = 0 
+            "query": """update ticket
+                        SET completed_at = Null, complete = 0
                         WHERE status <> 'Closed' and completed_at is not Null and complete = 1;""",
             "params": None
         },
@@ -1101,7 +1124,7 @@ def update_tickets():
 
     # Pass the results to the template for rendering
     return render_template('clean_up_tickets.html', results=results)
-    
+
 
 @app.route("/oauth2callback")
 def oauth2callback():
