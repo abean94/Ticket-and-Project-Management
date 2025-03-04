@@ -1,8 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, session, send_file
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_mail import Message, Mail
-from email.mime.image import MIMEImage
-import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from forms import RegistrationForm, LoginForm, TicketForm, UpdateTicketForm, AddNoteForm, ProjectForm, PhaseForm, SelectProjectForm, SelectPhaseForm, ClientForm, CompanyForm, EditClientForm, EditCompanyForm, ChangeRoleForm, EditNoteForm, UpdateProjectForm, RandomNumberForm
 from models import db, User, Ticket, TicketNote, Project, Phase, Client, Company
@@ -10,26 +8,29 @@ from datetime import datetime, timezone
 from flask_migrate import Migrate
 from sqlalchemy import func
 from sqlalchemy.sql import text
-from pytz import timezone, UTC
 import pymysql
 import random
 from io import BytesIO
 import pandas as pd
-import sqlite3
 from config import Config
 from google_calendar import create_event
 from google_auth_oauthlib.flow import Flow
 import pickle
+from pytz import timezone, UTC
+# from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import OperationalError
 
+# db = SQLAlchemy()
 
 app = Flask(__name__)
 
 #configurations
 app.config.from_object(Config)
 
+
 mail = Mail(app)
 
-#initialize the database
+# #initialize the database
 db.init_app(app)
 
 # Initialize Flask-Migrate
@@ -44,6 +45,20 @@ SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 CLIENT_SECRET_PATH = '/home/andrewbean94/Ticket-and-Project-Management/client_secret_634441787369-rst6o54jsg9t6tkkc1t5huvnl44fgka9.apps.googleusercontent.com.json'  # Update with actual path
 TOKEN_PATH = '/home/andrewbean94/Ticket-and-Project-Management/token.pickle'  # Update with actual path
 
+
+@app.before_request
+def before_request():
+    """Ensure MySQL connection is active before processing requests."""
+    try:
+        with app.app_context():
+            db.session.execute(text("SELECT 1"))
+    except OperationalError:
+        db.session.rollback()
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    """Ensure databse session is properly closed after each request."""
+    db.session.remove()
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -194,7 +209,7 @@ def dashboard_today():
     # ✅ Fix: Correct MySQL date filter (Includes today and tomorrow)
     tickets = Ticket.query.filter(
         Ticket.due_date.between(
-            func.date(func.now()),  
+            func.date(func.now()),
             func.timestampadd(text('SECOND'), 86399, func.date(func.now()))  # ✅ 11:59:59 PM today
         )
     ).order_by(
@@ -302,8 +317,6 @@ def new_ticket():
 
     return render_template('new_ticket.html', form=form, project_id=project_id)
 
-from datetime import datetime
-from pytz import timezone, UTC  # Import pytz for timezone handling
 
 @app.route('/view_ticket/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -1071,7 +1084,9 @@ def execute_query(query, params=None):
             user=Config.DB_USER,
             password=Config.DB_PASSWORD,
             database=Config.DB_NAME,
-            cursorclass=pymysql.cursors.DictCursor  # Returns results as dictionaries
+            cursorclass=pymysql.cursors.DictCursor,  # Returns results as dictionaries
+            connect_timeout=30,
+            autocommit=True
         )
         cursor = conn.cursor()
 
@@ -1085,7 +1100,8 @@ def execute_query(query, params=None):
         conn.commit()
 
         return {"success": True, "message": "Query executed successfully", "affected_rows": cursor.rowcount}
-    except pymysql.MySQLError as e:
+    except (pymysql.OperationalError, pymysql.InterfaceError) as e:  # ✅ Fix syntax
+        print(f"⚠️ Lost connection to MySQL: {e}")
         return {"success": False, "message": str(e)}
     finally:
         if conn:
