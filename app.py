@@ -621,8 +621,8 @@ def billing_dashboard():
     for ticket in tickets:
         total_time = db.session.query(
             func.sum(
-                func.julianday(TicketNote.note_finish_time) - func.julianday(TicketNote.note_start_time)
-            ) * 24   # Convert to minutes
+                func.timestampdiff(text('MINUTE'), TicketNote.note_start_time, TicketNote.note_finish_time)
+            )
         ).filter_by(ticket_id=ticket.id).scalar()
 
         # Store the total time per ticket in minutes
@@ -667,8 +667,8 @@ def billing_review_dashboard():
     for ticket in tickets:
         total_time = db.session.query(
             func.sum(
-                func.julianday(TicketNote.note_finish_time) - func.julianday(TicketNote.note_start_time)
-            ) * 24   # Convert to minutes
+                func.timestampdiff(text('MINUTE'), TicketNote.note_start_time, TicketNote.note_finish_time)
+            )
         ).filter_by(ticket_id=ticket.id).scalar()
 
         # Store the total time per ticket in minutes

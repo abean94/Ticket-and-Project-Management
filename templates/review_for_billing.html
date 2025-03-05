@@ -54,12 +54,7 @@
                             <td>{{ ticket.subject }}</td>
                             <td>{{ ticket.status }}</td>
                             <td>{{ ticket.priority }}</td>
-                            <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                            {% if ticket.due_date %}
-                                <td>{{ ticket.due_date.strftime('%m/%d/%Y') }}</td>
-                            {% else %}
-                                <td></td>
-                            {% endif %}
+
                             <td>{{ ticket.estimated_hours }}</td>
                             <td>{{ ticket_totals[ticket.id] | round(2) }}</td> <!-- Total time per ticket in minutes -->
                             <td>{{ ticket.project_id }}</td>
