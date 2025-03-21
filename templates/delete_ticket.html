@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delete Ticket</title>
+</head>
+<body>
+    <h1>Delete a Ticket</h1>
+
+    <form id="deleteForm" method="POST">
+        <label for="ticketSelect">Select a Ticket:</label>
+        <select id="ticketSelect" name="ticket_id" required>
+            <option value="" disabled selected>-- Choose a ticket --</option>
+            {% for ticket in tickets %}
+                <option value="{{ ticket.id }}">{{ ticket.id }} - {{ ticket.subject }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" onclick="confirmAndSubmit()">Delete</button>
+    </form>
+
+    <script>
+        function confirmAndSubmit() {
+            const form = document.getElementById('deleteForm');
+            const ticketId = document.getElementById('ticketSelect').value;
+            if (!ticketId) {
+                alert('Please select a ticket.');
+                return;
+            }
+            if (confirm('Are you sure you want to delete this ticket?')) {
+                form.action = `/delete_ticket/${ticketId}`;
+                form.submit();
+            }
+        }
+    </script>
+</body>
+</html>
+
+

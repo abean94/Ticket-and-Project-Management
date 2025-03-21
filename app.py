@@ -676,6 +676,14 @@ def billing_review_dashboard():
 
     return render_template('review_for_billing.html', tickets=tickets, ticket_totals=ticket_totals, start_date=start_date, end_date=end_date)
 
+
+@app.route('/delete_ticket_page')
+@login_required
+def delete_ticket_page():
+    tickets = Ticket.query.all()  # Or filter by user, etc.
+    return render_template('delete_ticket.html', tickets=tickets)
+
+
 @app.route('/delete_ticket/<int:id>', methods=['POST'])
 @login_required
 def delete_ticket(id):
