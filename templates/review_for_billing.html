@@ -54,12 +54,19 @@
                             <td>{{ ticket.subject }}</td>
                             <td>{{ ticket.status }}</td>
                             <td>{{ ticket.priority }}</td>
-
+                            <td>{{ ticket.created_at.strftime('%Y-%m-%d') if ticket.created_at else 'N/A' }}</td>
+                            <td>{{ ticket.due_date.strftime('%Y-%m-%d') if ticket.due_date else 'N/A' }}</td>
                             <td>{{ ticket.estimated_hours }}</td>
-                            <td>{{ ticket_totals[ticket.id] | round(2) }}</td> <!-- Total time per ticket in minutes -->
-                            <td>{{ ticket.project_id }}</td>
+                            <td>{{ (ticket_totals[ticket.id] / 60) | round(2) }}</td> <!-- Minutes to hours -->
+                            <td>{{ ticket.project.name if ticket.project else 'N/A' }}</td>
                             <td>
-                                <a href="{{ url_for('view_ticket', id=ticket.id) }}" class="btn btn-info btn-sm">View</a>
+                                <a href="{{ url_for('view_ticket', id=ticket.id) }}" class="btn btn-info btn-sm mb-1">View</a>
+                                <form method="POST" action="{{ url_for('toggle_billable_reviewed', ticket_id=ticket.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-success btn-sm">Mark Billable</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('mark_reviewed_nonbillable', ticket_id=ticket.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-warning btn-sm">Not Billable</button>
+                                </form>
                             </td>
                         </tr>
                     {% endfor %}

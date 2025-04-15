@@ -569,6 +569,22 @@ def toggle_billable(ticket_id):
     flash(f'Ticket "{ticket.subject}" updated to {"Billable" if ticket.billable == "R" else "Non-Billable"}!', 'success')
     return redirect(url_for('view_ticket', id=ticket_id))
 
+
+@app.route('/toggle_billable_reviewed/<int:ticket_id>', methods=['POST'])
+@login_required
+def toggle_billable_reviewed(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
+
+    # Toggle the billable status
+    if ticket.billable == 'NB':
+        ticket.billable = 'R'  # Convert to Billable
+    else:
+        ticket.billable = 'NB'  # Convert to Non-Billable
+
+    db.session.commit()
+    flash(f'Ticket "{ticket.subject}" updated to {"Billable" if ticket.billable == "R" else "Non-Billable"}!', 'success')
+    return redirect(url_for('billing_review_dashboard', id=ticket_id))
+
 @app.route('/toggle_invoiced/<int:ticket_id>', methods=['POST'])
 @login_required
 def toggle_invoiced(ticket_id):
@@ -581,6 +597,16 @@ def toggle_invoiced(ticket_id):
     db.session.commit()
     flash(f'Ticket "{ticket.subject}" updated to {"Invoiced" if ticket.billable == "I" else "Non-Billable"}!', 'success')
     return redirect(url_for('billing_dashboard'))
+
+@app.route('/mark_reviewed_nonbillable/<int:ticket_id>', methods=['POST'])
+@login_required
+def mark_reviewed_nonbillable(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
+    if ticket.billable == 'NB':
+        ticket.billable = 'RNB'  # Mark as reviewed but not billable
+        db.session.commit()
+        flash(f'Ticket \"{ticket.subject}\" marked as Reviewed - Not Billable.', 'info')
+    return redirect(url_for('billing_review_dashboard'))
 
 @app.route('/billing_dashboard', methods=['GET', 'POST'])
 @login_required
@@ -647,18 +673,7 @@ def billing_review_dashboard():
         Ticket.completed_at >= start_date_obj,
         Ticket.completed_at <= end_date_obj
     ).order_by(
-        db.case(
-            (Ticket.status in ['Open', 'In Progress'], 1),
-            (Ticket.status == 'Touched', 2),
-            (Ticket.status == 'On Hold', 3),
-            (Ticket.status == 'Closed', 4),
-        ).asc(),
-        db.case(
-            (Ticket.priority == 'Important-Urgent', 1),
-            (Ticket.priority == 'Important-NotUrgent', 2),
-            (Ticket.priority == 'NotImportant-Urgent', 3),
-            (Ticket.priority == 'NotImportant-NotUrgent', 4),
-        ).asc(),
+        Ticket.completed_at.asc()
     ).all()
 
 
