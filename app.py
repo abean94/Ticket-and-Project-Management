@@ -651,8 +651,9 @@ def billing_dashboard():
             )
         ).filter_by(ticket_id=ticket.id).scalar()
 
+
         # Store the total time per ticket in minutes
-        ticket_totals[ticket.id] = total_time if total_time else 0
+        ticket_totals[ticket.id] = total_time / 60 if total_time else 0
 
     return render_template('billing_dashboard.html', tickets=tickets, ticket_totals=ticket_totals, start_date=start_date, end_date=end_date)
 
