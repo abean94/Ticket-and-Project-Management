@@ -49,8 +49,8 @@
                     <ul class="list-group mt-2">
                         {% for ticket in phase.tickets %}
                         <li class="list-group-item">
-                            <a href="{{ url_for('view_ticket', id=ticket.id) }}">
-                                <strong>{{ ticket.subject }}</strong> - {{ ticket.status }} (Priority: {{ ticket.priority }})
+                            <a href="{{ url_for('view_ticket', id=ticket.id) }}" onclick="window.open(this.href, 'viewTicketWindow', 'width=1751,height=800,resizable=no,scrollbars=yes,status=yes'); return false;">
+                                <strong>{{ ticket.subject }}</strong> - {{ ticket.status }} (Priority: {{ ticket.priority }})  
                             </a>
                         </li>
                         {% endfor %}
