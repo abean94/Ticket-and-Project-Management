@@ -103,7 +103,7 @@
             <div class="col-md-6">
                 <p><strong>Due Date:</strong>
                     {% if ticket.due_date %}
-                        {{ ticket.due_date.strftime('%m/%d/%y %H:%M') }}
+                        {{ ticket.due_date.strftime('%m/%d/%y %H:%M') if ticket.due_date.__class__.__name__ == 'datetime' else 'Not Set' }}
                     {% else %}
                         N/A
                     {% endif %}
