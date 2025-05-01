@@ -1271,7 +1271,7 @@ def download_project_excel(project_id):
                 "Ticket Status": ticket.status,
                 "Priority": ticket.priority,
                 "Billable": billable_label,
-                "Logged Hours": houfrs,
+                "Logged Hours": hours,
                 "Notes": "\n---\n".join(note_texts)
             })
 
