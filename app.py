@@ -19,6 +19,7 @@ import pickle
 from pytz import timezone, UTC
 # from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import OperationalError
+from dateutil import parser
 
 # db = SQLAlchemy()
 
@@ -486,7 +487,15 @@ def send_note_email(requestor_email, ticket, note):
 @login_required
 def edit_ticket(id):
     ticket = Ticket.query.get_or_404(id)
-    update_form = UpdateTicketForm(obj=ticket)
+
+    # ✅ Fix: Normalize due_date before binding to the form
+    if ticket.due_date and isinstance(ticket.due_date, str):
+        try:
+            ticket.due_date = parser.parse(ticket.due_date)
+        except ValueError:
+            ticket.due_date = None
+
+    update_form = UpdateTicketForm(obj=ticket)  # ✅ Moved here
 
     # Populate client (employee) choices
     clients = Client.query.all()
@@ -654,7 +663,13 @@ def billing_dashboard():
 
         # Store the total time per ticket in minutes
         ticket_totals[ticket.id] = total_time / 60 if total_time else 0
-
+    
+    for ticket in tickets:
+        if ticket.due_date and isinstance(ticket.due_date, str):
+            try:
+                ticket.due_date = parser.parse(ticket.due_date)
+            except ValueError:
+                ticket.due_date = None
     return render_template('billing_dashboard.html', tickets=tickets, ticket_totals=ticket_totals, start_date=start_date, end_date=end_date)
 
 @app.route('/billing_review_dashboard', methods=['GET', 'POST'])
@@ -676,6 +691,21 @@ def billing_review_dashboard():
     ).order_by(
         Ticket.completed_at.asc()
     ).all()
+
+    for ticket in tickets:
+        # Fix due_date
+        if ticket.due_date and isinstance(ticket.due_date, str):
+            try:
+                ticket.due_date = parser.parse(ticket.due_date)
+            except ValueError:
+                ticket.due_date = None
+
+        # Fix completed_at
+        if ticket.completed_at and isinstance(ticket.completed_at, str):
+            try:
+                ticket.completed_at = parser.parse(ticket.completed_at)
+            except ValueError:
+                ticket.completed_at = None
 
 
     # Calculate total time spent per ticket from TicketNote
@@ -1241,7 +1271,7 @@ def download_project_excel(project_id):
                 "Ticket Status": ticket.status,
                 "Priority": ticket.priority,
                 "Billable": billable_label,
-                "Logged Hours": hours,
+                "Logged Hours": houfrs,
                 "Notes": "\n---\n".join(note_texts)
             })
 
