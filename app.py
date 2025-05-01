@@ -1203,6 +1203,60 @@ def creds_to_dict(creds):
         'scopes': creds.scopes
     }
 
+from flask import send_file
+import pandas as pd
+from io import BytesIO
+from datetime import datetime
+
+@app.route('/download_project_excel/<int:project_id>')
+def download_project_excel(project_id):
+    project = Project.query.get_or_404(project_id)
+
+    rows = []
+
+    for phase in project.phases:
+        for ticket in phase.tickets:
+            is_billable = ticket.billable == 'R'
+            billable_label = 'Yes' if is_billable else 'No'
+
+            # Sum time deltas only if billable
+            total_seconds = 0
+            note_texts = []
+
+            for note in ticket.notes:
+                note_texts.append(note.content)
+                if is_billable and note.note_start_time and note.note_finish_time:
+                    delta = note.note_finish_time - note.note_start_time
+                    total_seconds += delta.total_seconds()
+
+            hours = round(total_seconds / 3600, 2) if is_billable else 0
+
+            rows.append({
+                "Project Name": project.name,
+                "Project Status": project.status,
+                "Company": project.company.name,
+                "Phase Name": phase.name,
+                "Phase Status": phase.status,
+                "Ticket Subject": ticket.subject,
+                "Ticket Status": ticket.status,
+                "Priority": ticket.priority,
+                "Billable": billable_label,
+                "Logged Hours": hours,
+                "Notes": "\n---\n".join(note_texts)
+            })
+
+    df = pd.DataFrame(rows)
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Project Details')
+
+    output.seek(0)
+    filename = f"{project.name.replace(' ', '_')}_details_{datetime.now().strftime('%Y%m%d')}.xlsx"
+
+    return send_file(output, as_attachment=True, download_name=filename,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
 @app.route("/calendar")
 def calendar():
     return render_template('calendar.html')
