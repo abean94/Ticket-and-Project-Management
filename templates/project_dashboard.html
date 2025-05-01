@@ -35,8 +35,8 @@
         {% set ns_project = namespace(estimated=0, actual=0) %}
         {% for phase in project.phases %}
             {% for ticket in phase.tickets %}
-                {% set ns_project.estimated = ns_project.estimated + ticket.estimated_hours %}
                 {% if ticket.billable == 'R' %}
+                    {% set ns_project.estimated = ns_project.estimated + ticket.estimated_hours %}
                     {% set ns_note = namespace(seconds=0) %}
                     {% for note in ticket.notes %}
                         {% if note.note_start_time and note.note_finish_time %}
@@ -71,18 +71,18 @@
                     {% set ns_phase = namespace(estimated=0, actual=0) %}
                     
                     {% for ticket in phase.tickets %}
+                    {% if ticket.billable == 'R' %}
                         {% set ns_phase.estimated = ns_phase.estimated + ticket.estimated_hours %}
-                        {% if ticket.billable == 'R' %}
-                            {% set ns_note = namespace(seconds=0) %}
-                            {% for note in ticket.notes %}
-                                {% if note.note_start_time and note.note_finish_time %}
-                                    {% set delta = (note.note_finish_time - note.note_start_time).total_seconds() %}
-                                    {% set ns_note.seconds = ns_note.seconds + delta %}
-                                {% endif %}
-                            {% endfor %}
-                            {% set actual_hours = (ns_note.seconds / 3600) %}
-                            {% set ns_phase.actual = ns_phase.actual + actual_hours %}
-                        {% endif %}
+                        {% set ns_note = namespace(seconds=0) %}
+                        {% for note in ticket.notes %}
+                            {% if note.note_start_time and note.note_finish_time %}
+                                {% set delta = (note.note_finish_time - note.note_start_time).total_seconds() %}
+                                {% set ns_note.seconds = ns_note.seconds + delta %}
+                            {% endif %}
+                        {% endfor %}
+                        {% set actual_hours = (ns_note.seconds / 3600) %}
+                        {% set ns_phase.actual = ns_phase.actual + actual_hours %}
+                    {% endif %}
                     {% endfor %}
                     
                     {% set remaining_hours = ns_phase.estimated - ns_phase.actual %}
@@ -107,22 +107,24 @@
                 
                             {% set ns = namespace(seconds=0) %}
                             {% if ticket.billable == 'R' %}
-                                {% for note in ticket.notes %}
-                                    {% if note.note_start_time and note.note_finish_time %}
-                                        {% set delta = (note.note_finish_time - note.note_start_time).total_seconds() %}
-                                        {% set ns.seconds = ns.seconds + delta %}
-                                    {% endif %}
-                                {% endfor %}
-                            {% endif %}
-                
+                            {% set ns = namespace(seconds=0) %}
+                            {% for note in ticket.notes %}
+                                {% if note.note_start_time and note.note_finish_time %}
+                                    {% set delta = (note.note_finish_time - note.note_start_time).total_seconds() %}
+                                    {% set ns.seconds = ns.seconds + delta %}
+                                {% endif %}
+                            {% endfor %}
                             {% set actual = (ns.seconds / 3600) %}
                             {% set remaining = ticket.estimated_hours - actual %}
                             <div class="text-muted small">
                                 Est: {{ ticket.estimated_hours | round(2) }} hrs — 
                                 Act: {{ actual | round(2) }} hrs — 
                                 Rem: {{ remaining | round(2) }} hrs — 
-                                {% if ticket.billable == 'R' %}Billable{% else %}Not Billable{% endif %}
+                                Billable
                             </div>
+                        {% else %}
+                            <div class="text-muted small">Not Billable</div>
+                        {% endif %}
                         </li>
                         {% endfor %}
                     </ul>
