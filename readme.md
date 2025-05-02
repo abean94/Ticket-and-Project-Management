@@ -71,3 +71,6 @@ flask db upgrade
 flask run
 
 
+## Setup Google Calendar
+You'll need to follow the steps to enable and get a client secret.json https://developers.google.com/workspace/calendar/api/quickstart/go
+
