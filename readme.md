@@ -24,34 +24,38 @@ pip install -r requirements.txt
 
 You will need a config file in this format
 
-config.py
+```python
+# config.py
 
 class Config:
     SECRET_KEY = 'secretkey'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    MAIL_SERVER = {{mail server}}
-    MAIL_PORT = {{port}}
-    MAIL_USE_TLS = True -> if mail server uses tls
-    MAIL_USE_SSL = False -> if required
-    MAIL_USERNAME = {{email@address.com}}  # Your email address
-    MAIL_PASSWORD = {{email passsword/app password}}  # Your email password
-    MAIL_DEFAULT_SENDER = ('Sender Name', 'sender@email.com') <- must be a tuple
 
-    # mysql connection details
-    DB_HOST = '127.0.0.1'  # Localhost because of SSH tunnel
+    # Email settings
+    MAIL_SERVER = '{{mail server}}'
+    MAIL_PORT = {{port}}
+    MAIL_USE_TLS = True  # if mail server uses TLS
+    MAIL_USE_SSL = False  # if required
+    MAIL_USERNAME = '{{email@address.com}}'
+    MAIL_PASSWORD = '{{email password or app password}}'
+    MAIL_DEFAULT_SENDER = ('Sender Name', 'sender@email.com')  # must be a tuple
+
+    # MySQL connection details
+    DB_HOST = '127.0.0.1'
     DB_USER = 'db user'
     DB_PASSWORD = 'dbpass'
-    DB_NAME = 'databasee name'
-    DB_PORT = port  # MySQL default port is 3306
+    DB_NAME = 'database name'
+    DB_PORT = 3306  # or your MySQL port
     SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}'
 
     SQLALCHEMY_ENGINE_OPTIONS = {
-    "pool_pre_ping": True,
-    "pool_recycle": 280,
-    "pool_timeout": 30,
-    "pool_size": 10,
-    "max_overflow": 5
-}
+        "pool_pre_ping": True,
+        "pool_recycle": 280,
+        "pool_timeout": 30,
+        "pool_size": 10,
+        "max_overflow": 5
+    }
+```
 
 
 ## Database setup
