@@ -3,7 +3,7 @@ import datetime
 import os
 import pickle
 import sys
-
+from instance.config import Config
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -16,9 +16,9 @@ SCOPES = [
     'https://www.googleapis.com/auth/calendar.readonly'
 ]
 
-BASE_DIR =  '/home/andrewbean94/Ticket-and-Project-Management/' # Adjust this to match your directory
-TOKEN_PATH = os.path.join(BASE_DIR, "token.pickle")
-CLIENT_SECRET_PATH = os.path.join(BASE_DIR, "client_secret_634441787369-rst6o54jsg9t6tkkc1t5huvnl44fgka9.apps.googleusercontent.com.json")  # Rename your client secret file
+BASE_DIR =  Config.BASE_DIR
+TOKEN_PATH = Config.TOKEN_PATH
+CLIENT_SECRET_PATH = Config.CLIENT_SECRET_PATH
 
 
 def get_calendar_service():
@@ -28,18 +28,6 @@ def get_calendar_service():
         with open(TOKEN_PATH, 'rb') as token:
             creds = pickle.load(token)
 
-    # Refresh expired credentials
-    if creds and creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-
-    # If still not valid, re-authenticate
-    if not creds or not creds.valid:
-        flow = InstalledAppFlow.from_client_secrets_file(
-            CLIENT_SECRET_PATH,
-            SCOPES,
-            redirect_uri='https://tickets.rvaitpros.com/oauth2callback'
-        )
-        creds = flow.run_local_server(port=0)
 
         # Save the new credentials
         with open(TOKEN_PATH, 'wb') as token:
@@ -63,7 +51,7 @@ def create_event(summary, start_time, end_time, description='', location=''):
             ],
         },
     }
-    calendar_id = "c_9ee15e1619ed93b65bce56d3bbd5388b26f072fbf905cedaa7d502544476d2bf@group.calendar.google.com"  # Replace with your desired calendar's ID
+    calendar_id = Config.CALENDAR_ID
     event = service.events().insert(calendarId=calendar_id, body=event).execute()
 
 # def list_calendars():

@@ -12,7 +12,7 @@ import pymysql
 import random
 from io import BytesIO
 import pandas as pd
-from config import Config
+from instance.config import Config
 from google_calendar import create_event
 from google_auth_oauthlib.flow import Flow
 import pickle
@@ -43,8 +43,8 @@ login_manager.login_view = 'login'
 
 
 SCOPES = ['https://www.googleapis.com/auth/calendar.events']
-CLIENT_SECRET_PATH = '/home/andrewbean94/Ticket-and-Project-Management/client_secret_634441787369-rst6o54jsg9t6tkkc1t5huvnl44fgka9.apps.googleusercontent.com.json'  # Update with actual path
-TOKEN_PATH = '/home/andrewbean94/Ticket-and-Project-Management/token.pickle'  # Update with actual path
+CLIENT_SECRET_PATH =  app.config['CLIENT_SECRET_PATH']
+TOKEN_PATH =  app.config['TOKEN_PATH']
 
 
 @app.before_request
@@ -63,7 +63,7 @@ def shutdown_session(exception=None):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 @app.route('/register', methods=['GET', 'POST'])
 @login_required
@@ -410,7 +410,7 @@ def send_note_email(requestor_email, ticket, note):
     note_finish_time_eastern = note.note_finish_time.replace(tzinfo=UTC).astimezone(eastern).strftime('%m/%d/%y %H:%M')
 
     # Link to the Google Drive image (replace with your correct link)
-    logo_url = "https://drive.google.com/uc?export=view&id=1UY4jZ9uTc4zGQpOIOQgAr1YQXHUbCMpy"  # Replace this with your Google Drive image link
+    logo_url = Config.LOGO_URL
 
     # HTML email body with linked logo image
     body = f"""
@@ -470,7 +470,7 @@ def send_note_email(requestor_email, ticket, note):
             <p>Regards,<br>
             <strong>RVA IT Helpdesk Team</strong></p>
             <div class="footer">
-                <p>RVA IT Pros | Contact Us: (804) 220-0380 | helpdesk@rvaitpros.com</p>
+                <p>{Config.COMPANY_NAME} | Contact Us: {Config.COMPANY_SUPPORT_PHONE} | {Config.COMPANY_SUPPORT_EMAIL}</p>
             </div>
         </div>
     </body>
@@ -1203,35 +1203,6 @@ def update_tickets():
 
     return render_template('clean_up_tickets.html', results=results)
 
-
-@app.route("/oauth2callback")
-def oauth2callback():
-    # Create a new flow instance inside the route
-    flow = Flow.from_client_secrets_file(
-        CLIENT_SECRET_PATH,
-        SCOPES,
-        redirect_uri="https://tickets.rvaitpros.com/oauth2callback"
-    )
-
-    # Exchange authorization response for credentials
-    flow.fetch_token(authorization_response=request.url)
-    creds = flow.credentials
-
-    # Save credentials to a file instead of session
-    with open(TOKEN_PATH, 'wb') as token:
-        pickle.dump(creds, token)
-
-    return redirect("/")
-
-def creds_to_dict(creds):
-    return {
-        'token': creds.token,
-        'refresh_token': creds.refresh_token,
-        'token_uri': creds.token_uri,
-        'client_id': creds.client_id,
-        'client_secret': creds.client_secret,
-        'scopes': creds.scopes
-    }
 
 from flask import send_file
 import pandas as pd

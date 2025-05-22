@@ -1,15 +1,46 @@
-config.py
+# Python
 __pycache__/
-instance/
-migrations/
-static/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
 venv/
-mysql_compatible_dump.sql
-client_secret_634441787369-bsfs8tlp7mc7hlujgcuvn992ur8rfbjp.apps.googleusercontent.com.json
-client_secret_634441787369-rst6o54jsg9t6tkkc1t5huvnl44fgka9.apps.googleusercontent.com.json
+.env
+.env.*
+
+# Flask-specific
+instance/
+config.py  # if it ever includes secrets; otherwise comment out if shared
+*.db
+
+# Migrations
+migrations/
+
+# Compiled assets
+*.log
+*.pickle
+*.json
+*.sqlite3
+*.pyc
+*.pkl
+
+# Static and cache
+static/
+*.cache
+
+# IDE/editor/OS-specific
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Project-specific
+token.pickle
+client_secret_*.json
+my_sql.py
 dump.py
 dump.sql
-my_sql.py
-token.pickle
-csv_to_mysql.py
 run_ssh.bat
+mysql_compatible_dump.sql
+csv_to_mysql.py

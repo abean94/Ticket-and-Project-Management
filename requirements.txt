@@ -27,3 +27,4 @@ tzdata==2024.2
 Werkzeug==3.0.4
 WTForms==3.1.2
 XlsxWriter==3.2.0
+python-dotenv-1.1.0
