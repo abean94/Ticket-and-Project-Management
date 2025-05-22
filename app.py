@@ -12,7 +12,7 @@ import pymysql
 import random
 from io import BytesIO
 import pandas as pd
-from instance.config import Config
+from config import Config
 from google_calendar import create_event
 from google_auth_oauthlib.flow import Flow
 import pickle

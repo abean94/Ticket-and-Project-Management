@@ -3,7 +3,7 @@ import datetime
 import os
 import pickle
 import sys
-from instance.config import Config
+from config import Config
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
