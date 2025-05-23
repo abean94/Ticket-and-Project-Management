@@ -185,8 +185,8 @@
                 <i class="fa fa-bars"></i>
             </button>
             <a class="navbar-brand ms-3" href="#">
-                <img src="static/rvaitpros.JPG" alt="Logo" style="height: 30px; margin-right: 10px; border-radius: 50%;">
-                RVA IT Help Desk
+                <img src="{{ BRAND_LOGO_PATH }}" alt="Logo" style="height: 30px; margin-right: 10px; border-radius: 50%;">
+                {{ BRAND_NAME }}
             </a>
             <div class="ms-auto">
                 {% if current_user.role == 'admin' %}

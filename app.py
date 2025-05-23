@@ -25,9 +25,20 @@ from dateutil import parser
 
 app = Flask(__name__)
 
+
+
 #configurations
 app.config.from_object(Config)
 
+
+@app.context_processor
+def inject_branding():
+    return {
+        'BRAND_NAME': app.config.get('BRAND_NAME'),
+        'BRAND_LOGO_PATH': app.config.get('BRAND_LOGO_PATH')
+    }
+
+print(f'{app.config.get('BRAND_NAME')}')
 
 mail = Mail(app)
 
