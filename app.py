@@ -38,7 +38,6 @@ def inject_branding():
         'BRAND_LOGO_PATH': app.config.get('BRAND_LOGO_PATH')
     }
 
-print(f'{app.config.get('BRAND_NAME')}')
 
 mail = Mail(app)
 
