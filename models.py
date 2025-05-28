@@ -85,7 +85,7 @@ class TicketNote(db.Model):
     note_start_time = db.Column(db.DateTime, nullable = True)
     note_finish_time = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
+    is_resolution = db.Column(db.Boolean, default=False, nullable=False)
     def __repr__(self):
         return f'<TicketNote {self.id} for Ticket {self.ticket_id}>'
 

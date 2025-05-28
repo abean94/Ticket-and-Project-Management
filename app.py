@@ -493,6 +493,8 @@ def send_note_email(requestor_email, ticket, note):
     # Send the email without attaching the logo since it's linked via URL
     mail.send(msg)
 
+
+
 @app.route('/edit_ticket/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_ticket(id):
@@ -571,7 +573,23 @@ def edit_note(note_id):
             form.note_finish_time.data = utc.localize(note.note_finish_time).astimezone(eastern).replace(tzinfo=None)
         form.content.data = note.content
 
-    return render_template('edit_note.html', form=form, ticket=note.ticket)
+    return render_template('edit_note.html', form=form, ticket=note.ticket, note=note)
+
+@app.route('/toggle_resolution/<int:note_id>', methods=['POST'])
+@login_required
+def toggle_resolution(note_id):
+    note = TicketNote.query.get_or_404(note_id)
+    print(note)
+
+    # Toggle the billable status
+    if note.is_resolution == False:
+        note.is_resolution = True  # Convert to resolution note
+    else:
+        note.is_resolution = False  # Convert to not resolution
+
+    db.session.commit()
+    flash(f'Note "{note.id}" updated to {"Resolution" if note.is_resolution == True else "Not-Resolution"}!', 'success')
+    return redirect(url_for('view_ticket', id=note.ticket_id))
 
 @app.route('/toggle_billable/<int:ticket_id>', methods=['POST'])
 @login_required
@@ -753,6 +771,82 @@ def delete_ticket(id):
     flash('Ticket deleted successfully!', 'success')
     return redirect(url_for('dashboard'))
 
+# def send_complete_email(requestor_email, ticket):
+#     subject = f"New Note Added to Ticket# {ticket.id}: {ticket.subject}"
+#     eastern = timezone('US/Eastern')
+
+#     # Link to the Google Drive image (replace with your correct link)
+#     logo_url = Config.LOGO_URL
+
+#     # HTML email body with linked logo image
+#     body = f"""
+#     <html>
+#     <head>
+#         <style>
+#             body {{
+#                 font-family: Arial, sans-serif;
+#                 background-color: #e0e6ed;
+#                 color: #2a3f54;
+#                 padding: 20px;
+#             }}
+#             .container {{
+#                 max-width: 600px;
+#                 margin: 0 auto;
+#                 background-color: #ffffff;
+#                 padding: 20px;
+#                 border-radius: 10px;
+#                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+#             }}
+#             h2 {{
+#                 color: #1b3a57;
+#                 text-align: center;
+#             }}
+#             .note-details {{
+#                 background-color: #cbd5e0;
+#                 padding: 10px;
+#                 border-radius: 5px;
+#             }}
+#             .time {{
+#                 font-weight: bold;
+#                 color: #0077b6;
+#             }}
+#             .footer {{
+#                 text-align: center;
+#                 font-size: 0.9em;
+#                 color: #2a3f54;
+#                 margin-top: 20px;
+#             }}
+#         </style>
+#     </head>
+#     <body>
+#         <div class="container">
+#             <div style="text-align: center;">
+#                 <img src="{logo_url}" alt="RVA IT Pros Logo" style="max-width: 200px; margin-bottom: 20px;">
+#             </div>
+#             <h2>Ticket Completed</h2>
+#             <p>Hello <strong>{ticket.client.first_name}</strong>,</p>
+#             <p>Your ticket has been completed:</p>
+#             <div class="note-details">
+#                 <p><strong>Ticket ID:</strong> {ticket.id}</p>
+#                 <p><strong>Subject:</strong> {ticket.subject}</p>
+#             </div>
+#             <p>If you have any questions or need further assistance, feel free to contact us.</p>
+#             <p>Regards,<br>
+#             <strong>RVA IT Helpdesk Team</strong></p>
+#             <div class="footer">
+#                 <p>{Config.COMPANY_NAME} | Contact Us: {Config.COMPANY_SUPPORT_PHONE} | {Config.COMPANY_SUPPORT_EMAIL}</p>
+#             </div>
+#         </div>
+#     </body>
+#     </html>
+#     """
+
+#     msg = Message(subject, recipients=['andrew.bean@rvaitpros.com'])
+#     msg.html = body
+
+#     # Send the email without attaching the logo since it's linked via URL
+#     mail.send(msg)
+
 # Route to mark a ticket as complete (records completed_at time)
 @app.route('/complete_ticket/<int:id>', methods=['POST'])
 @login_required
@@ -761,8 +855,10 @@ def complete_ticket(id):
     ticket.complete = True
     ticket.completed_at = datetime.now(UTC)  # Mark the ticket as completed
     ticket.status = 'Closed'
+    ticket.requestor_email
     db.session.commit()
     flash('Ticket marked as complete!', 'success')
+    send_complete_email(ticket.requestor_email, ticket)
     return redirect(url_for('view_ticket', id=ticket.id))
 
 @app.route('/create_project', methods=['GET', 'POST'])

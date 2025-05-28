@@ -55,6 +55,16 @@
 
             <button type="submit" class="btn btn-primary">Update Note</button>
         </form>
+    
+        <form method="POST" action="{{ url_for('toggle_resolution', note_id=note.id) }}">
+            <button type="submit" class="btn btn-outline-info mt-2 mb-3">
+                {% if note.is_resolution %}
+                    Unmark as Resolution
+                {% else %}
+                    Mark as Resolution
+                {% endif %}
+            </button>
+        </form>
 
         <a href="{{ url_for('view_ticket', id=ticket.id) }}" class="btn btn-secondary ">Back to Ticket</a>
     </div>
