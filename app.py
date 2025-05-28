@@ -862,11 +862,20 @@ def delete_ticket(id):
 @login_required
 def complete_ticket(id):
     ticket = Ticket.query.get_or_404(id)
+
+    # Check for a resolution note
+    has_resolution = any(note.is_resolution for note in ticket.notes)
+
+    if not has_resolution:
+        flash('Cannot complete ticket: no resolution note found.', 'danger')
+        return redirect(url_for('view_ticket', id=ticket.id))
+
+    # Proceed with completion
     ticket.complete = True
-    ticket.completed_at = datetime.now(UTC)  # Mark the ticket as completed
+    ticket.completed_at = datetime.now(UTC)
     ticket.status = 'Closed'
-    ticket.requestor_email
     db.session.commit()
+
     flash('Ticket marked as complete!', 'success')
     # send_complete_email(ticket.requestor_email, ticket)
     return redirect(url_for('view_ticket', id=ticket.id))
