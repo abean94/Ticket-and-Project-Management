@@ -858,7 +858,7 @@ def complete_ticket(id):
     ticket.requestor_email
     db.session.commit()
     flash('Ticket marked as complete!', 'success')
-    send_complete_email(ticket.requestor_email, ticket)
+    # send_complete_email(ticket.requestor_email, ticket)
     return redirect(url_for('view_ticket', id=ticket.id))
 
 @app.route('/create_project', methods=['GET', 'POST'])
