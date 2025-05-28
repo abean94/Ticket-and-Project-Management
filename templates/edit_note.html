@@ -66,6 +66,12 @@
             </button>
         </form>
 
+        <form method="POST" action="{{ url_for('delete_note', note_id=note.id) }}">
+            <button type="submit" class="btn btn-danger mb-3">
+                Delete Note
+            </button>
+        </form>
+        
         <a href="{{ url_for('view_ticket', id=ticket.id) }}" class="btn btn-secondary ">Back to Ticket</a>
     </div>
 

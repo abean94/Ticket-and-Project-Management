@@ -575,6 +575,16 @@ def edit_note(note_id):
 
     return render_template('edit_note.html', form=form, ticket=note.ticket, note=note)
 
+@app.route('/delete_note/<int:note_id>', methods=['POST'])
+@login_required
+def delete_note(note_id):
+    note = TicketNote.query.get_or_404(note_id)
+
+    db.session.delete(note)
+    db.session.commit()
+    flash('Ticket Note deleted successfully!', 'success')
+    return redirect(url_for('view_ticket', id=note.ticket_id))
+
 @app.route('/toggle_resolution/<int:note_id>', methods=['POST'])
 @login_required
 def toggle_resolution(note_id):
