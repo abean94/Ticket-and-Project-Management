@@ -295,6 +295,8 @@ def new_ticket():
         project = Project.query.get_or_404(project_id)
         phases = [(p.id, p.name) for p in project.phases]
         form.phase_id.choices = phases if phases else [(0, 'No Phases Available')]
+        if phase_id:
+            form.phase_id.data = phase_id
     else:
         form.phase_id.choices = [(0, 'No Project Assigned')]
 
@@ -326,7 +328,7 @@ def new_ticket():
         else:
             return redirect(url_for('dashboard_today'))
 
-    return render_template('new_ticket.html', form=form, project_id=project_id)
+    return render_template('new_ticket.html', form=form, project_id=project_id, phase_id=phase_id)
 
 
 @app.route('/view_ticket/<int:id>', methods=['GET', 'POST'])
