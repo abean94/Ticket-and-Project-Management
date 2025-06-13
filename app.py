@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, session, send_file
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from flask_mail import Message, Mail
+from gmail_send import send_gmail_message
 from werkzeug.security import generate_password_hash, check_password_hash
 from forms import RegistrationForm, LoginForm, TicketForm, UpdateTicketForm, AddNoteForm, ProjectForm, PhaseForm, SelectProjectForm, SelectPhaseForm, ClientForm, CompanyForm, EditClientForm, EditCompanyForm, ChangeRoleForm, EditNoteForm, UpdateProjectForm, RandomNumberForm
 from models import db, User, Ticket, TicketNote, Project, Phase, Client, Company
@@ -14,7 +14,7 @@ from io import BytesIO
 import pandas as pd
 from config import Config
 from google_calendar import create_event
-from google_auth_oauthlib.flow import Flow
+from google_auth_oauthlib.flow import InstalledAppFlow
 import pickle
 from pytz import timezone, UTC
 # from flask_sqlalchemy import SQLAlchemy
@@ -38,8 +38,6 @@ def inject_branding():
         'BRAND_LOGO_PATH': app.config.get('BRAND_LOGO_PATH')
     }
 
-
-mail = Mail(app)
 
 # #initialize the database
 db.init_app(app)
@@ -489,11 +487,9 @@ def send_note_email(requestor_email, ticket, note):
     </html>
     """
 
-    msg = Message(subject, recipients=[requestor_email])
-    msg.html = body
 
     # Send the email without attaching the logo since it's linked via URL
-    mail.send(msg)
+    send_gmail_message(to=requestor_email, subject=subject, html_body=body)
 
 
 
@@ -1388,6 +1384,28 @@ def download_project_excel(project_id):
 @app.route("/calendar")
 def calendar():
     return render_template('calendar.html')
+
+@app.route('/authorize_gmail')
+def authorize_gmail():
+    flow = InstalledAppFlow.from_client_secrets_file(
+        Config.CLIENT_SECRET_PATH,
+        ['https://www.googleapis.com/auth/gmail.send']
+    )
+    creds = flow.run_local_server(port=0)
+    with open('token_helpdesk.pickle', 'wb') as token:
+        pickle.dump(creds, token)
+    return "Helpdesk Gmail authorized."
+
+@app.route('/authorize_calendar')
+def authorize_calendar():
+    flow = InstalledAppFlow.from_client_secrets_file(
+        Config.CLIENT_SECRET_PATH,
+        ['https://www.googleapis.com/auth/calendar.events']
+    )
+    creds = flow.run_local_server(port=0)
+    with open('token_personal.pickle', 'wb') as token:
+        pickle.dump(creds, token)
+    return "Personal calendar authorized."
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

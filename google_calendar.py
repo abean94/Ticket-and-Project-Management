@@ -13,7 +13,8 @@ from googleapiclient.discovery import build
 SCOPES = [
     'https://www.googleapis.com/auth/calendar',
     'https://www.googleapis.com/auth/calendar.events',
-    'https://www.googleapis.com/auth/calendar.readonly'
+    'https://www.googleapis.com/auth/calendar.readonly',
+    'https://www.googleapis.com/auth/gmail.send'
 ]
 
 BASE_DIR =  Config.BASE_DIR
@@ -29,10 +30,8 @@ def get_calendar_service():
             creds = pickle.load(token)
 
 
-        # Save the new credentials
-        with open(TOKEN_PATH, 'wb') as token:
-            pickle.dump(creds, token)
-
+    with open(Config.CALENDAR_TOKEN_PATH, 'rb') as token:
+        creds = pickle.load(token)
     return build('calendar', 'v3', credentials=creds)
 
 def create_event(summary, start_time, end_time, description='', location=''):
