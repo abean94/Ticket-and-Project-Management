@@ -225,6 +225,10 @@
 
     <div class="container mt-4">
         <div class="tickets-container">
+            <div class="mb-3 d-flex align-items-center gap-2">
+                <input type="text" id="ticketSearchInput" placeholder="Search ticket #" class="form-control w-25">
+                <button class="btn btn-primary btn-sm" onclick="searchTicket()">Find</button>
+            </div>
             <h3 class="mb-4">Ticket Board</h3>
             <ul class="tickets-list">
                 {% for ticket in tickets %}
@@ -317,5 +321,51 @@
             }
         });
     </script>
+    <script>
+    function searchTicket() {
+        const input = document.getElementById("ticketSearchInput").value.toLowerCase().trim();
+        if (!input) {
+            alert("Please enter a ticket number, name, or subject.");
+            return;
+        }
+
+        // Remove previous highlights
+        document.querySelectorAll(".highlight").forEach(el => el.classList.remove("highlight"));
+
+        let found = false;
+        document.querySelectorAll(".ticket-item").forEach(item => {
+            const idText = item.querySelector(".ticket-subject")?.textContent.toLowerCase() || "";
+            const userText = item.querySelector(".ticket-user")?.textContent.toLowerCase() || "";
+            const detailsText = item.querySelector(".ticket-details")?.textContent.toLowerCase() || "";
+
+            if (idText.includes(input) || userText.includes(input) || detailsText.includes(input)) {
+                item.classList.add("highlight");
+                item.scrollIntoView({ behavior: "smooth", block: "center" });
+                found = true;
+                return;
+            }
+        });
+
+        if (!found) {
+            alert("Ticket not found.");
+        }
+    }
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && document.activeElement.id === "ticketSearchInput") {
+            searchTicket();
+        }
+    });
+
+    // Highlight style
+    document.head.insertAdjacentHTML("beforeend", `
+        <style>
+            .highlight {
+                background-color: #ffff99 !important;
+                border: 2px solid #ffcc00;
+            }
+        </style>
+    `);
+</script>
 </body>
 </html>
