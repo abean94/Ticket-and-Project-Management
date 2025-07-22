@@ -68,6 +68,9 @@ class Ticket(db.Model):
     # Foreign key to the client (employee) who made the request
     client_id = db.Column(db.Integer, db.ForeignKey('client.id', name='fk_ticket_client'), nullable=False)
 
+    # Gmail message ID for tickets created from email
+    gmail_message_id = db.Column(db.String(128), nullable=True)
+
     # Relationship to the company (through the client)
     client = db.relationship('Client', back_populates='tickets')
 

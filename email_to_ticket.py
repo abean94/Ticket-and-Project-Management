@@ -90,7 +90,7 @@ def notify_admin(sender_email, subject, body):
     )
 
 
-def create_ticket_from_email(sender_email, subject, body):
+def create_ticket_from_email(sender_email, subject, body, gmail_message_id=None):
     with app.app_context():
         client = Client.query.filter_by(email=sender_email).first()
         today = date.today()
@@ -105,7 +105,8 @@ def create_ticket_from_email(sender_email, subject, body):
             cc_emails=None,
             due_date=today,  # Set due_date to today
             estimated_hours=None,
-            created_at=datetime.now(UTC)
+            created_at=datetime.now(UTC),
+            gmail_message_id=gmail_message_id  # Store Gmail message ID
         )
         db.session.add(ticket)
         db.session.commit()
@@ -146,7 +147,7 @@ def main():
         sender, subject, body = parse_email(service, msg_id)
         sender_email = extract_email_address(sender)
         print(f"Processing email from {sender_email} - Subject: {subject}")
-        ticket, client_exists = create_ticket_from_email(sender_email, subject, body)
+        ticket, client_exists = create_ticket_from_email(sender_email, subject, body, gmail_message_id=msg_id)
         send_ticket_confirmation(ticket)
         if not client_exists:
             notify_admin(sender_email, subject, body)
