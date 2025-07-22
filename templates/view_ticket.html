@@ -102,7 +102,8 @@
             <!-- Left Column -->
             <div class="col-md-6">
                 <p><strong>Subject:</strong> {{ ticket.subject }}</p>
-                <p><strong>Description:</strong> {{ ticket.description }}</p>
+                <p><strong>Description:</strong></p>
+                <div>{{ ticket.description | sanitize_html | safe }}</div>
                 <p><strong>Status:</strong> {{ ticket.status }}</p>
                 <p class="no-print"><strong>Priority:</strong> {{ ticket.priority }}</p>
                 <p><strong>Requestor Email:</strong> {{ ticket.requestor_email }}</p>

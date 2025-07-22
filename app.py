@@ -20,6 +20,7 @@ from pytz import timezone, UTC
 # from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import OperationalError
 from dateutil import parser
+import bleach
 
 # db = SQLAlchemy()
 
@@ -1285,6 +1286,7 @@ def execute_query(query, params=None):
             conn.close()
 
 @app.route('/update-tickets', methods=['GET','POST'])
+@login_required
 def update_tickets():
     # Get today's date dynamically in the correct format
     today = datetime.now().strftime('%Y-%m-%d 00:00:00')
@@ -1333,6 +1335,7 @@ from io import BytesIO
 from datetime import datetime
 
 @app.route('/download_project_excel/<int:project_id>')
+@login_required
 def download_project_excel(project_id):
     project = Project.query.get_or_404(project_id)
 
@@ -1382,10 +1385,12 @@ def download_project_excel(project_id):
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 @app.route("/calendar")
+@login_required
 def calendar():
     return render_template('calendar.html')
 
 @app.route('/authorize_gmail')
+@login_required
 def authorize_gmail():
     flow = InstalledAppFlow.from_client_secrets_file(
         Config.CLIENT_SECRET_PATH,
@@ -1397,6 +1402,7 @@ def authorize_gmail():
     return "Helpdesk Gmail authorized."
 
 @app.route('/authorize_calendar')
+@login_required
 def authorize_calendar():
     flow = InstalledAppFlow.from_client_secrets_file(
         Config.CLIENT_SECRET_PATH,
@@ -1406,6 +1412,16 @@ def authorize_calendar():
     with open('token_personal.pickle', 'wb') as token:
         pickle.dump(creds, token)
     return "Personal calendar authorized."
+
+@app.template_filter('sanitize_html')
+def sanitize_html_filter(s):
+    ALLOWED_TAGS = [
+        'b', 'i', 'u', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'pre', 'code', 'blockquote'
+    ]
+    ALLOWED_ATTRIBUTES = {
+        'a': ['href', 'title', 'target'],
+    }
+    return bleach.clean(s, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES, strip=True)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
