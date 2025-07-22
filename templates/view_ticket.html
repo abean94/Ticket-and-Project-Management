@@ -104,6 +104,14 @@
                 <p><strong>Subject:</strong> {{ ticket.subject }}</p>
                 <p><strong>Description:</strong></p>
                 <div>{{ ticket.description | sanitize_html | safe }}</div>
+                {% if ticket.gmail_message_id %}
+                    <p>
+                        <strong>Original Email:</strong>
+                        <a href="https://mail.google.com/mail/u/0/#inbox/{{ ticket.gmail_message_id }}" target="_blank">
+                            View in Gmail
+                        </a>
+                    </p>
+                {% endif %}
                 <p><strong>Status:</strong> {{ ticket.status }}</p>
                 <p class="no-print"><strong>Priority:</strong> {{ ticket.priority }}</p>
                 <p><strong>Requestor Email:</strong> {{ ticket.requestor_email }}</p>
