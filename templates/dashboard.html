@@ -211,7 +211,6 @@
         <h5 class="text-white">Navigation</h5>
         <a href="{{ url_for('project_or_regular') }}" class="btn btn-success mb-2">New Ticket</a>
         <a href="{{ url_for('random_task') }}" class="btn btn-secondary mb-2">Get something Done!</a>
-        <a href="{{ url_for('download_tickets_excel') }}" class="btn btn-secondary mb-2">Download Open Tickets</a>
         <a href="{{ url_for('projects_home') }}" class="btn btn-secondary mb-2">View Projects</a>
         <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mb-2">View All Tickets</a>
         <a href="{{ url_for('dashboard_today') }}" class="btn btn-secondary mb-2">Tickets Due Today</a>
@@ -225,10 +224,18 @@
 
     <div class="container mt-4">
         <div class="tickets-container">
-            <div class="mb-3 d-flex align-items-center gap-2">
-                <input type="text" id="ticketSearchInput" placeholder="Search ticket #" class="form-control w-25">
-                <button class="btn btn-primary btn-sm" onclick="searchTicket()">Find</button>
+            <div class="mb-3 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2 flex-grow-1">
+                    <input type="text" id="ticketSearchInput" placeholder="Search ticket #" class="form-control" style="max-width: 300px;">
+                    <button class="btn btn-primary btn-sm" onclick="searchTicket()">Find</button>
+                </div>
+                <a href="{% if request.endpoint == 'dashboard_today' %}
+                        {{ url_for('download_tickets_excel_today') }}
+                        {% else %}
+                        {{ url_for('download_tickets_excel') }}
+                        {% endif %}" class="btn btn-secondary btn-sm">Download Open Tickets</a>
             </div>
+
             <h3 class="mb-4">Ticket Board</h3>
             <ul class="tickets-list">
                 {% for ticket in tickets %}

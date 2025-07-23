@@ -39,6 +39,9 @@ def inject_branding():
         'BRAND_LOGO_PATH': app.config.get('BRAND_LOGO_PATH')
     }
 
+@app.context_processor
+def inject_request():
+    return dict(request=request)
 
 # #initialize the database
 db.init_app(app)
@@ -270,6 +273,59 @@ def dashboard_today():
     session.pop('start_time_utc', None)
     return render_template('dashboard.html', tickets=tickets)
 
+@app.route('/download_tickets_excel_today')
+@login_required
+def download_tickets_excel_today():
+    # Retrieve all the tickets from the database (replace with your actual query)
+    # Create a list of dictionaries to store ticket data
+    tickets = Ticket.query.filter(
+        Ticket.due_date.between(
+            func.date(func.now()),
+            func.timestampadd(text('SECOND'), 86399, func.date(func.now()))  # ✅ 11:59:59 PM today
+        )
+    ).order_by(
+        db.case(
+            (Ticket.status in ['Open', 'In Progress'], 1),
+            (Ticket.status == 'Touched', 2),
+            (Ticket.status == 'On Hold', 3),
+            (Ticket.status == 'Closed', 4),
+        ).asc(),
+        db.case(
+            (Ticket.priority == 'Important-Urgent', 1),
+            (Ticket.priority == 'Important-NotUrgent', 2),
+            (Ticket.priority == 'NotImportant-Urgent', 3),
+            (Ticket.priority == 'NotImportant-NotUrgent', 4),
+        ).asc(),
+    ).all()
+    ticket_data = []
+    for ticket in tickets:
+        ticket_data.append({
+            'Ticket ID': ticket.id,
+            'Subject': ticket.subject,
+            'Status': ticket.status,
+            'Priority': ticket.priority,
+            'Due Date': ticket.due_date.strftime('%Y-%m-%d') if ticket.due_date else None,
+            'Estimated Hours': ticket.estimated_hours,
+            'Project': ticket.project.name if ticket.project else 'No Project',
+            'Phase': ticket.phase.name if ticket.phase else 'No Phase'
+        })
+
+    # Create a DataFrame from the ticket data
+    df = pd.DataFrame(ticket_data)
+
+    # Create an in-memory output file
+    output = BytesIO()
+
+    # Write the DataFrame to an Excel file
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Tickets')
+
+    # Set the output file's position to the beginning
+    output.seek(0)
+
+    # Send the file as an attachment to be downloaded by the user
+    return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                     as_attachment=True, download_name='tickets.xlsx')
 
 @app.route('/project_or_regular')
 @login_required
@@ -588,7 +644,6 @@ def delete_note(note_id):
 @login_required
 def toggle_resolution(note_id):
     note = TicketNote.query.get_or_404(note_id)
-    print(note)
 
     # Toggle the billable status
     if note.is_resolution == False:
