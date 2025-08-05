@@ -25,7 +25,8 @@ migrations/
 *.pkl
 
 # Static and cache
-static/
+static/rvaitpros.jpg
+static/favicon.ico
 *.cache
 
 # IDE/editor/OS-specific

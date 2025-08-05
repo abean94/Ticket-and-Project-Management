@@ -1,0 +1,364 @@
+/* Markdown Editor Styles */
+.markdown-toolbar {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-bottom: none;
+    border-radius: 0.375rem 0.375rem 0 0;
+    padding: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.markdown-toolbar button {
+    margin: 0;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    min-width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.markdown-toolbar button:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.markdown-editor {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 120px;
+}
+
+.markdown-preview {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    min-height: 120px;
+    overflow-y: auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.markdown-preview h1 {
+    font-size: 2rem;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 0.3rem;
+}
+
+.markdown-preview h2 {
+    font-size: 1.5rem;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 0.3rem;
+}
+
+.markdown-preview h3 {
+    font-size: 1.25rem;
+}
+
+.markdown-preview p {
+    margin-bottom: 1rem;
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+}
+
+.markdown-preview li {
+    margin-bottom: 0.25rem;
+}
+
+.markdown-preview blockquote {
+    border-left: 4px solid #dfe2e5;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: #6a737d;
+    font-style: italic;
+}
+
+/* Enhanced Code Styling */
+.markdown-preview .inline-code {
+    background-color: #f6f8fa;
+    border-radius: 3px;
+    padding: 0.2rem 0.4rem;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875em;
+    color: #e36209;
+    border: 1px solid #e1e4e8;
+}
+
+.markdown-preview .code-block {
+    background-color: #f6f8fa;
+    border-radius: 6px;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid #e1e4e8;
+    position: relative;
+}
+
+.markdown-preview .code-block::before {
+    content: attr(data-language);
+    position: absolute;
+    top: 0;
+    right: 1rem;
+    background: #e1e4e8;
+    color: #586069;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 0 6px 0 6px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.markdown-preview .code-block code {
+    background: none;
+    padding: 0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: #24292e;
+    display: block;
+    white-space: pre;
+}
+
+/* Syntax Highlighting Colors */
+.markdown-preview .code-block .language-python {
+    color: #24292e;
+}
+
+.markdown-preview .code-block .language-python .keyword {
+    color: #d73a49;
+    font-weight: 600;
+}
+
+.markdown-preview .code-block .language-python .string {
+    color: #032f62;
+}
+
+.markdown-preview .code-block .language-python .comment {
+    color: #6a737d;
+    font-style: italic;
+}
+
+.markdown-preview .code-block .language-python .function {
+    color: #6f42c1;
+}
+
+.markdown-preview .code-block .language-python .number {
+    color: #005cc5;
+}
+
+.markdown-preview .code-block .language-javascript {
+    color: #24292e;
+}
+
+.markdown-preview .code-block .language-javascript .keyword {
+    color: #d73a49;
+    font-weight: 600;
+}
+
+.markdown-preview .code-block .language-javascript .string {
+    color: #032f62;
+}
+
+.markdown-preview .code-block .language-javascript .comment {
+    color: #6a737d;
+    font-style: italic;
+}
+
+.markdown-preview .code-block .language-javascript .function {
+    color: #6f42c1;
+}
+
+.markdown-preview .code-block .language-html {
+    color: #24292e;
+}
+
+.markdown-preview .code-block .language-html .tag {
+    color: #22863a;
+}
+
+.markdown-preview .code-block .language-html .attribute {
+    color: #6f42c1;
+}
+
+.markdown-preview .code-block .language-html .string {
+    color: #032f62;
+}
+
+.markdown-preview .code-block .language-css {
+    color: #24292e;
+}
+
+.markdown-preview .code-block .language-css .property {
+    color: #6f42c1;
+}
+
+.markdown-preview .code-block .language-css .value {
+    color: #032f62;
+}
+
+.markdown-preview .code-block .language-css .selector {
+    color: #d73a49;
+}
+
+/* Copy Code Button */
+.markdown-preview .code-block {
+    position: relative;
+}
+
+.markdown-preview .code-block .copy-button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: #f6f8fa;
+    border: 1px solid #d1d5da;
+    border-radius: 3px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    color: #586069;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.markdown-preview .code-block:hover .copy-button {
+    opacity: 1;
+}
+
+.markdown-preview .code-block .copy-button:hover {
+    background: #e1e4e8;
+}
+
+.markdown-preview a {
+    color: #0366d6;
+    text-decoration: none;
+}
+
+.markdown-preview a:hover {
+    text-decoration: underline;
+}
+
+.markdown-preview table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1rem 0;
+}
+
+.markdown-preview th,
+.markdown-preview td {
+    border: 1px solid #dfe2e5;
+    padding: 0.5rem;
+    text-align: left;
+}
+
+.markdown-preview th {
+    background-color: #f6f8fa;
+    font-weight: 600;
+}
+
+.markdown-preview hr {
+    border: none;
+    border-top: 1px solid #eaecef;
+    margin: 2rem 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .markdown-toolbar {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .markdown-toolbar button {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .markdown-toolbar {
+        background: #2d3748;
+        border-color: #4a5568;
+    }
+    
+    .markdown-editor {
+        background: #1a202c;
+        color: #e2e8f0;
+        border-color: #4a5568;
+    }
+    
+    .markdown-preview {
+        background: #1a202c;
+        color: #e2e8f0;
+        border-color: #4a5568;
+    }
+    
+    .markdown-preview h1,
+    .markdown-preview h2 {
+        border-bottom-color: #4a5568;
+    }
+    
+    .markdown-preview blockquote {
+        border-left-color: #4a5568;
+        color: #a0aec0;
+    }
+    
+    .markdown-preview .inline-code {
+        background-color: #2d3748;
+        color: #fbb6ce;
+        border-color: #4a5568;
+    }
+    
+    .markdown-preview .code-block {
+        background-color: #2d3748;
+        border-color: #4a5568;
+    }
+    
+    .markdown-preview .code-block code {
+        color: #e2e8f0;
+    }
+    
+    .markdown-preview .code-block::before {
+        background: #4a5568;
+        color: #a0aec0;
+    }
+    
+    .markdown-preview th,
+    .markdown-preview td {
+        border-color: #4a5568;
+    }
+    
+    .markdown-preview th {
+        background-color: #2d3748;
+    }
+    
+    .markdown-preview hr {
+        border-top-color: #4a5568;
+    }
+} 
