@@ -1546,5 +1546,62 @@ def clean_email_to_markdown_filter(email_text):
     
     return cleaned_text
 
+@app.route('/mass_complete_automated_tickets', methods=['GET', 'POST'])
+@login_required
+def mass_complete_automated_tickets():
+    # Check if user is admin
+    if current_user.role != 'admin':
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('dashboard_today'))
+    
+    if request.method == 'POST':
+        # Get ticket IDs from form
+        ticket_ids = request.form.getlist('ticket_ids')
+        
+        if not ticket_ids:
+            flash('No tickets selected.', 'warning')
+            return redirect(url_for('mass_complete_automated_tickets'))
+        
+        completed_count = 0
+        for ticket_id in ticket_ids:
+            try:
+                ticket = Ticket.query.get(int(ticket_id))
+                if ticket and ticket.status != 'Closed':
+                    # Mark as complete without resolution check
+                    ticket.status = 'Closed'
+                    ticket.complete = True
+                    ticket.completed_at = datetime.now(UTC)
+                    completed_count += 1
+            except (ValueError, AttributeError):
+                continue
+        
+        db.session.commit()
+        flash(f'Successfully completed {completed_count} automated tickets.', 'success')
+        return redirect(url_for('dashboard_today'))
+    
+    # GET request - show form
+    # Get tickets that are likely from automated scripts (based on subject patterns)
+    automated_patterns = ['automate']
+    
+    # automated_patterns = [
+    #     'automated', 'script', 'cron', 'scheduled', 'backup', 'sync', 
+    #     'update', 'maintenance', 'monitoring', 'health check', 'status',
+    #     'report', 'log', 'scan', 'cleanup', 'archive', 'notification',
+    #     'alert', 'system', 'process', 'job', 'task', 'routine', 'daily',
+    #     'weekly', 'monthly', 'periodic', 'automatic', 'batch', 'import',
+    #     'export', 'sync', 'replication', 'mirror', 'copy', 'transfer'
+    # ]
+    
+    # Get open tickets that match automated patterns
+    automated_tickets = []
+    all_open_tickets = Ticket.query.filter_by(status='Open').all()
+    
+    for ticket in all_open_tickets:
+        subject_lower = ticket.subject.lower()
+        if any(pattern in subject_lower for pattern in automated_patterns):
+            automated_tickets.append(ticket)
+    
+    return render_template('mass_complete_automated_tickets.html', tickets=automated_tickets)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

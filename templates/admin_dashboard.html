@@ -50,7 +50,24 @@
             </tbody>
         </table>
 
-        <a href="{{ url_for('dashboard_today') }}" class="btn btn-secondary">Back to Dashboard</a>
+        <div class="mt-4">
+            <h4>Admin Tools</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Mass Complete Automated Tickets</h5>
+                            <p class="card-text">Quickly complete tickets from automated scripts without resolution notes.</p>
+                            <a href="{{ url_for('mass_complete_automated_tickets') }}" class="btn btn-success">
+                                <i class="fas fa-check"></i> Mass Complete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <a href="{{ url_for('dashboard_today') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
     </div>
 
     <!-- Bootstrap JS -->
