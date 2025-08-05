@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Ticket</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='markdown-editor.css') }}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body {
@@ -82,6 +84,111 @@
                 display: none;
             }
         }
+        
+        /* Markdown content styles */
+        .markdown-content {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+        }
+        
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3,
+        .markdown-content h4,
+        .markdown-content h5,
+        .markdown-content h6 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .markdown-content ul,
+        .markdown-content ol {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+        
+        .markdown-content code {
+            background-color: #e9ecef;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875em;
+        }
+        
+        .markdown-content pre {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        .markdown-content blockquote {
+            border-left: 4px solid #dee2e6;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .markdown-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+        }
+        
+        .markdown-content th,
+        .markdown-content td {
+            border: 1px solid #dee2e6;
+            padding: 0.5rem;
+            text-align: left;
+        }
+        
+        .markdown-content th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        /* Code block styling for display view */
+        .markdown-content pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid #e1e4e8;
+            position: relative;
+        }
+        
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 1.45;
+            color: #24292e;
+            display: block;
+            white-space: pre;
+        }
+        
+        .markdown-content code {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 0.2rem 0.4rem;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875em;
+            color: #e36209;
+            border: 1px solid #e1e4e8;
+        }
     </style>
 </head>
 <body>
@@ -103,7 +210,7 @@
             <div class="col-md-6">
                 <p><strong>Subject:</strong> {{ ticket.subject }}</p>
                 <p><strong>Description:</strong></p>
-                <div>{{ ticket.description | sanitize_html | safe }}</div>
+                <div class="markdown-content">{{ ticket.description | markdown | safe }}</div>
                 {% if ticket.gmail_message_id %}
                     <p>
                         <strong>Original Email:</strong>
@@ -159,7 +266,8 @@
                                     Not available
                                 {% endif %}
                             </p>
-                            <p><strong>Note Content:</strong> {{ note.content }}</p>
+                            <p><strong>Note Content:</strong></p>
+                            <div class="markdown-content">{{ note.content | markdown | safe }}</div>
                             {% if note.is_resolution %}
                                 <span class="badge bg-success">Resolution</span>
                             {% endif %}
@@ -182,7 +290,8 @@
 
             <div class="mb-3">
                 {{ note_form.content.label(class="form-label") }}
-                {{ note_form.content(class="form-control", rows=3, placeholder="Enter your note") }}
+                {{ note_form.content(class="form-control markdown-editor", rows=6, placeholder="Enter your note (supports markdown formatting)") }}
+                <div id="note-preview" class="markdown-preview" style="display: none;"></div>
                 {% if note_form.content.errors %}
                     <div class="text-danger">{{ note_form.content.errors[0] }}</div>
                 {% endif %}
@@ -252,5 +361,30 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <script src="{{ url_for('static', filename='markdown-editor.js') }}"></script>
+    <script>
+        // Initialize markdown editor for note form
+        document.addEventListener('DOMContentLoaded', function() {
+            const noteTextarea = document.querySelector('#content');
+            if (noteTextarea && !noteTextarea.dataset.markdownInitialized) {
+                noteTextarea.dataset.preview = 'note-preview';
+                new MarkdownEditor('content', 'note-preview');
+                noteTextarea.dataset.markdownInitialized = 'true';
+            }
+        });
+        
+        // Apply syntax highlighting to existing markdown content
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    </script>
 </body>
 </html>

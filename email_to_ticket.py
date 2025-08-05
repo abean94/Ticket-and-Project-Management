@@ -94,9 +94,42 @@ def create_ticket_from_email(sender_email, subject, body, gmail_message_id=None)
     with app.app_context():
         client = Client.query.filter_by(email=sender_email).first()
         today = date.today()
+        
+        # Clean and convert email body to markdown
+        from markdownify import markdownify
+        import re
+        
+        # Convert HTML email to markdown
+        markdown_text = markdownify(body, heading_style="ATX")
+        
+        # Clean up common email artifacts
+        lines = markdown_text.split('\n')
+        cleaned_lines = []
+        
+        for line in lines:
+            # Remove email headers and signatures
+            if any(pattern in line.lower() for pattern in [
+                'from:', 'sent:', 'to:', 'subject:', 'cc:', 'bcc:',
+                'best regards', 'sincerely', 'thank you', 'thanks',
+                '--', '---', 'sent from my', 'get outlook'
+            ]):
+                continue
+            
+            # Remove empty lines at the beginning
+            if not cleaned_lines and line.strip() == '':
+                continue
+                
+            # Remove excessive whitespace
+            line = line.strip()
+            if line:
+                cleaned_lines.append(line)
+        
+        # Join lines back together
+        cleaned_description = '\n\n'.join(cleaned_lines)
+        
         ticket = Ticket(
             subject=subject or '(No Subject)',
-            description=body or '',
+            description=cleaned_description,
             status='Open',
             priority='Important-NotUrgent',
             user_id=DEFAULT_USER_ID,  # Always assign to default user

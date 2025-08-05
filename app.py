@@ -17,10 +17,16 @@ from google_calendar import create_event
 from google_auth_oauthlib.flow import InstalledAppFlow
 import pickle
 from pytz import timezone, UTC
-# from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import OperationalError
 from dateutil import parser
 import bleach
+import markdown
+import bleach
+from markdownify import markdownify
+import re
+from email.parser import Parser
+from email import policy
 
 # db = SQLAlchemy()
 
@@ -52,6 +58,23 @@ migrate = Migrate(app, db)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# Configure markdown
+md = markdown.Markdown(extensions=['fenced_code', 'tables', 'codehilite', 'nl2br', 'sane_lists'])
+
+# Configure bleach for HTML sanitization
+allowed_tags = [
+    'p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'a', 'img', 'table',
+    'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'div', 'span'
+]
+allowed_attributes = {
+    '*': ['class', 'id'],
+    'a': ['href', 'title'],
+    'img': ['src', 'alt', 'title'],
+    'code': ['class'],
+    'pre': ['class']
+}
 
 
 SCOPES = ['https://www.googleapis.com/auth/calendar.events']
@@ -530,7 +553,8 @@ def send_note_email(requestor_email, ticket, note):
             <div class="note-details">
                 <p><strong>Ticket ID:</strong> {ticket.id}</p>
                 <p><strong>Subject:</strong> {ticket.subject}</p>
-                <p><strong>Note Content:</strong> {note.content}</p>
+                <p><strong>Note Content:</strong></p>
+                <div style="background-color: #ffffff; padding: 15px; border-left: 4px solid #007bff; margin: 10px 0; border-radius: 3px;">{md.convert(note.content)}</div>
                 <p><strong>Time Spent:</strong> <span class="time">{note_start_time_eastern} to {note_finish_time_eastern}</span></p>
             </div>
             <p>If you have any questions or need further assistance, feel free to contact us.</p>
@@ -1477,6 +1501,50 @@ def sanitize_html_filter(s):
         'a': ['href', 'title', 'target'],
     }
     return bleach.clean(s, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES, strip=True)
+
+@app.template_filter('markdown')
+def markdown_filter(text):
+    """Convert markdown text to HTML"""
+    if text is None:
+        return ""
+    html = md.convert(str(text))
+    return bleach.clean(html, tags=allowed_tags, attributes=allowed_attributes)
+
+@app.template_filter('clean_email_to_markdown')
+def clean_email_to_markdown_filter(email_text):
+    """Clean email text and convert to markdown format"""
+    if email_text is None:
+        return ""
+    
+    # Convert HTML email to markdown
+    markdown_text = markdownify(email_text, heading_style="ATX")
+    
+    # Clean up common email artifacts
+    lines = markdown_text.split('\n')
+    cleaned_lines = []
+    
+    for line in lines:
+        # Remove email headers and signatures
+        if any(pattern in line.lower() for pattern in [
+            'from:', 'sent:', 'to:', 'subject:', 'cc:', 'bcc:',
+            'best regards', 'sincerely', 'thank you', 'thanks',
+            '--', '---', 'sent from my', 'get outlook'
+        ]):
+            continue
+        
+        # Remove empty lines at the beginning
+        if not cleaned_lines and line.strip() == '':
+            continue
+            
+        # Remove excessive whitespace
+        line = line.strip()
+        if line:
+            cleaned_lines.append(line)
+    
+    # Join lines back together
+    cleaned_text = '\n\n'.join(cleaned_lines)
+    
+    return cleaned_text
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
