@@ -222,6 +222,22 @@
                 <p><strong>Status:</strong> {{ ticket.status }}</p>
                 <p class="no-print"><strong>Priority:</strong> {{ ticket.priority }}</p>
                 <p><strong>Requestor Email:</strong> {{ ticket.requestor_email }}</p>
+                {% if ticket.requestor_email %}
+                    {% set meeting_title = COMPANY_NAME ~ " - Ticket #" ~ ticket.id ~ " - " ~ ticket.subject %}
+                    {% set meeting_body = "Details: " ~ ticket.description %}
+
+                    <a href="https://calendar.google.com/calendar/u/0/r/eventedit?add={{ ticket.requestor_email }}&text={{ meeting_title | urlencode }}&details={{ meeting_body | urlencode }}" 
+                    target="_blank" 
+                    class="btn btn-outline-primary mt-2 w-100">
+                        📅 Schedule Google Meet
+                    </a>
+
+                    <a href="https://outlook.office.com/calendar/0/deeplink/compose?to={{ ticket.requestor_email }}&subject={{ meeting_title | urlencode }}&body={{ meeting_body | urlencode }}" 
+                    target="_blank" 
+                    class="btn btn-outline-info mt-2 w-100">
+                        📆 Schedule Teams Meeting
+                    </a>
+                {% endif %}
             </div>
 
             <!-- Right Column -->

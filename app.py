@@ -27,6 +27,7 @@ from markdownify import markdownify
 import re
 from email.parser import Parser
 from email import policy
+import urllib.parse
 
 # db = SQLAlchemy()
 
@@ -42,7 +43,8 @@ app.config.from_object(Config)
 def inject_branding():
     return {
         'BRAND_NAME': app.config.get('BRAND_NAME'),
-        'BRAND_LOGO_PATH': app.config.get('BRAND_LOGO_PATH')
+        'BRAND_LOGO_PATH': app.config.get('BRAND_LOGO_PATH'),
+        'COMPANY_NAME': app.config.get('COMPANY_NAME')  # Add this line
     }
 
 @app.context_processor
@@ -1509,6 +1511,12 @@ def markdown_filter(text):
         return ""
     html = md.convert(str(text))
     return bleach.clean(html, tags=allowed_tags, attributes=allowed_attributes)
+
+@app.template_filter('urlencode')
+def urlencode_filter(s):
+    if s is None:
+        return ''
+    return urllib.parse.quote(s)
 
 @app.template_filter('clean_email_to_markdown')
 def clean_email_to_markdown_filter(email_text):

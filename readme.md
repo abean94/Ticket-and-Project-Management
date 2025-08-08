@@ -123,3 +123,67 @@ flask run
 ## Setup Google Calendar
 You'll need to follow the steps to enable and get a client secret.json https://developers.google.com/workspace/calendar/api/quickstart/go
 
+📅 Google Meet & Microsoft Teams Scheduling Buttons
+This feature allows you to quickly schedule a meeting with the ticket requestor directly from the ticket view screen.
+
+🔧 Requirements
+To use this feature:
+
+You must be logged into your Google account to schedule a Google Meet.
+
+You must be logged into your Microsoft 365/Outlook account (with Teams enabled) to schedule a Teams meeting.
+
+✅ Google Meet Button
+What it does:
+
+Opens Google Calendar with a new event.
+
+Automatically adds the requestor’s email.
+
+Automatically generates a Google Meet link once saved.
+
+Template Code:
+
+jinja
+Copy
+Edit
+<a href="https://calendar.google.com/calendar/u/0/r/eventedit?add={{ ticket.requestor_email }}&text=Meeting with RVA IT&details=Regarding ticket: {{ ticket.subject }}" 
+   target="_blank" 
+   class="btn btn-outline-primary mt-2 w-100">
+    📅 Schedule Google Meet
+</a>
+✅ Microsoft Teams Button
+What it does:
+
+Opens a new Outlook calendar event via Outlook Web.
+
+Auto-fills the requestor's email, subject, and body.
+
+Teams meeting link is automatically added if your org defaults to including Teams in events.
+
+Setup in app.py:
+
+Register a URL encoding filter:
+
+python
+Copy
+Edit
+import urllib.parse
+
+@app.template_filter('urlencode')
+def urlencode_filter(s):
+    if s is None:
+        return ''
+    return urllib.parse.quote(s)
+Template Code:
+
+jinja
+Copy
+Edit
+{% set subject = "RVA IT Support - " + ticket.subject %}
+{% set body = "Following up on Ticket #" + ticket.id|string + ": " + ticket.subject %}
+<a href="https://outlook.office.com/calendar/0/deeplink/compose?to={{ ticket.requestor_email }}&subject={{ subject | urlencode }}&body={{ body | urlencode }}" 
+   target="_blank" 
+   class="btn btn-outline-info mt-2 w-100">
+    📆 Schedule Teams Meeting
+</a>
