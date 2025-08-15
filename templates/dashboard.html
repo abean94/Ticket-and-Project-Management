@@ -217,6 +217,7 @@
         <a href="{{ url_for('calendar') }}" class="btn btn-secondary mb-2">Time Tracking</a>
         <a href="{{ url_for('view_company') }}" class="btn btn-secondary mb-2">View Clients</a>
         <a href="{{ url_for('update_tickets') }}" class="btn btn-secondary mb-2">Clean Up Tickets</a>
+        <a href="{{ url_for('search_tickets') }}" class="btn btn-secondary mb-2">Search Tickets</a>
         {% if current_user.role == 'admin' %}
             <a href="{{ url_for('billing_dashboard') }}" class="btn btn-danger mb-2">Billing</a>
             <a href="{{ url_for('mass_complete_automated_tickets') }}" class="btn btn-warning mb-2">Mass Complete Automated</a>

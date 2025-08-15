@@ -6,7 +6,7 @@ from forms import RegistrationForm, LoginForm, TicketForm, UpdateTicketForm, Add
 from models import db, User, Ticket, TicketNote, Project, Phase, Client, Company
 from datetime import datetime, timezone
 from flask_migrate import Migrate
-from sqlalchemy import func
+from sqlalchemy import func, or_, and_
 from sqlalchemy.sql import text
 import pymysql
 import random
@@ -50,6 +50,18 @@ def inject_branding():
 @app.context_processor
 def inject_request():
     return dict(request=request)
+
+@app.template_filter('ymd')
+def ymd(value):
+    """Return YYYY-MM-DD for datetime/date; pass through strings; empty for falsy."""
+    if not value:
+        return ''
+    try:
+        return value.strftime('%Y-%m-%d')
+    except Exception:
+        # If it's already a string (or something else), return a safe slice
+        s = str(value)
+        return s[:10] if len(s) >= 10 else s
 
 # #initialize the database
 db.init_app(app)
@@ -1610,6 +1622,48 @@ def mass_complete_automated_tickets():
             automated_tickets.append(ticket)
     
     return render_template('mass_complete_automated_tickets.html', tickets=automated_tickets)
+
+@app.route('/search', methods=['GET'])
+@login_required
+def search_tickets():
+    q = (request.args.get('q') or '').strip()
+    tickets = []
+    total = 0
+
+    if q:
+        like = f"%{q}%"
+        id_filter = []
+        if q.isdigit():
+            # numeric search matches ID exactly, but still OR with the fuzzy fields
+            id_filter = [Ticket.id == int(q)]
+
+        tickets = (
+            Ticket.query.filter(
+                or_(
+                    *id_filter,
+                    Ticket.subject.ilike(like),
+                    Ticket.description.ilike(like),
+                    # client fields (first/last/email)
+                    Ticket.client.has(
+                        or_(
+                            Client.first_name.ilike(like),
+                            Client.last_name.ilike(like),
+                            Client.email.ilike(like),
+                            # company name
+                            Client.company.has(Company.name.ilike(like)),
+                        )
+                    ),
+                    # any note content contains text
+                    Ticket.notes.any(TicketNote.content.ilike(like)),
+                )
+            )
+            .order_by(Ticket.created_at.desc())
+            .limit(200)  # safety cap; adjust as you like or add pagination
+            .all()
+        )
+        total = len(tickets)
+
+    return render_template('search_tickets.html', q=q, tickets=tickets, total=total)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
