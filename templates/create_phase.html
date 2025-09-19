@@ -11,14 +11,15 @@
     <div class="container mt-5">
         <h2>Create New Phase for Project: {{ project.name }}</h2>
 
-        <!-- Flash messages for success or errors -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="alert alert-{{ messages[0][0] }}">
-                    {{ messages[0][1] }}
-                </div>
-            {% endif %}
-        {% endwith %}
+    <!-- Flash messages for success or errors -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="alert alert-{{ messages[0][0] }} d-flex align-items-center fade show" role="alert"">
+                {{ messages[0][1] }}
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endif %}
+    {% endwith %}
 
         <!-- Create Phase Form -->
         <form method="POST" action="">
