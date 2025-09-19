@@ -67,6 +67,8 @@ class MarkdownEditor {
         // Insert toolbar before textarea
         this.textarea.parentNode.insertBefore(toolbar, this.textarea);
 
+        toolbar.querySelectorAll('button').forEach(btn => btn.tabIndex = -1);
+
         // Add event listeners to toolbar buttons
         toolbar.addEventListener('click', (e) => {
             if (e.target.closest('button')) {
