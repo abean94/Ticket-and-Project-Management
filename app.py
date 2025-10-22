@@ -1060,9 +1060,12 @@ def project_dashboard(project_id):
 def select_project(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     form = SelectProjectForm()
+    
+    project = Project.query.filter(~Project.status.in_(['Closed'])).all()
+
 
     # Populate the project choices
-    form.project_id.choices = [(0, 'Select a Project')] + [(p.id, p.name) for p in Project.query.all()]
+    form.project_id.choices = [(0, 'Select a Project')] + [(p.id, p.name) for p in Project.query.filter(~Project.status.in_(['Closed'])).all()]
 
     if form.validate_on_submit():
         selected_project = Project.query.get(form.project_id.data)
@@ -1080,7 +1083,7 @@ def select_project_new_ticket():
     form = SelectProjectForm()
 
     # Populate the project choices
-    form.project_id.choices = [(0, 'Select a Project')] + [(p.id, p.name) for p in Project.query.all()]
+    form.project_id.choices = [(0, 'Select a Project')] + [(p.id, p.name) for p in Project.query.filter(~Project.status.in_(['Closed'])).all()]
 
     if form.validate_on_submit():
         selected_project = Project.query.get(form.project_id.data)
