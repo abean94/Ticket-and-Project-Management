@@ -44,6 +44,11 @@
             </div>
 
             <div class="mb-3">
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control", placeholder="Leave blank if no portal access needed") }}
+            </div>
+
+            <div class="mb-3">
                 {{ form.company_id.label(class="form-label") }}
                 {{ form.company_id(class="form-control") }}
             </div>

@@ -48,6 +48,24 @@
             </div>
 
             <div class="mb-3">
+                {% if has_portal_access %}
+                    <label class="form-label d-block">Portal Access</label>
+                    <span class="badge bg-success mb-2">Active</span>
+                    <button type="button" class="btn btn-sm btn-outline-warning ms-2 mb-2" onclick="document.getElementById('password_reset_div').style.display='block'; this.style.display='none';">Reset Password</button>
+
+                    <div id="password_reset_div" style="display: none; margin-top: 10px; padding: 15px; border: 1px dashed #ccc; border-radius: 5px;">
+                        <label class="form-label text-warning fw-bold">Set New Password</label>
+                        {{ form.password(class="form-control", placeholder="Enter new password to overwrite current one") }}
+                        <small class="text-muted">Leave blank if you change your mind.</small>
+                    </div>
+                {% else %}
+                    <label class="form-label text-primary fw-bold">Grant Portal Access</label>
+                    {{ form.password(class="form-control", placeholder="Enter a password to create their portal account") }}
+                    <small class="text-muted">Leave blank if no portal access is needed.</small>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
                 {{ form.phone.label(class="form-label") }}
                 {{ form.phone(class="form-control") }}
             </div>

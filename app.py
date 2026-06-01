@@ -204,8 +204,15 @@ def login():
         if user and check_password_hash(user.password, form.password.data):
             login_user(user)
             flash("Login successful!", "success")
-            next_page = request.args.get("next")
-            return redirect(next_page) if next_page else redirect(url_for("dashboard"))
+
+            # Send clients to the portal, everyone else to the dashboard
+            if user.role == "client":
+                return redirect(url_for("client_portal"))
+            else:
+                next_page = request.args.get("next")
+                return (
+                    redirect(next_page) if next_page else redirect(url_for("dashboard"))
+                )
         else:
             flash(
                 "Login unsuccessful. Please check your username and password.", "danger"
@@ -1448,15 +1455,13 @@ def create_company():
 
 # Route to create a client
 @app.route("/create_client", methods=["GET", "POST"])
-@login_required  # If needed
+@login_required
 def create_client():
     form = ClientForm()
-
-    # Populate company choices dynamically from the database
     form.company_id.choices = [(c.id, c.name) for c in Company.query.all()]
 
     if form.validate_on_submit():
-        # Create a new client object
+        # 1. Create the Client (Contact) record
         client = Client(
             first_name=form.first_name.data,
             last_name=form.last_name.data,
@@ -1465,9 +1470,26 @@ def create_client():
             company_id=form.company_id.data,
         )
         db.session.add(client)
+        db.session.flush()  # We use flush() to get the new client.id before committing
+
+        # 2. Check if a password was provided. If yes, create their login User.
+        if form.password.data:
+            # We use their email as their username for simplicity
+            hashed_password = generate_password_hash(
+                form.password.data, method="pbkdf2:sha256"
+            )
+            user = User(
+                username=form.email.data,
+                email=form.email.data,
+                password=hashed_password,
+                role="client",  # Automatically assigns the 'client' role
+                client_id=client.id,  # Links the login to the contact record we just made
+            )
+            db.session.add(user)
+
         db.session.commit()
         flash("Client created successfully!", "success")
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("dashboard_today"))
 
     return render_template("create_client.html", form=form)
 
@@ -1515,17 +1537,53 @@ def view_edit_client(client_id):
     client = Client.query.get_or_404(client_id)
     form = EditClientForm(obj=client)
 
+    # Check if this client already has a linked portal User account
+    user = User.query.filter_by(client_id=client.id).first()
+    has_portal_access = user is not None  # Boolean flag to pass to the template
+
     if form.validate_on_submit():
         # Update client details
         client.first_name = form.first_name.data
         client.last_name = form.last_name.data
         client.email = form.email.data
         client.phone = form.phone.data
+
+        # Keep the portal login email/username in sync if the client's email changed
+        if user:
+            user.email = form.email.data
+            user.username = form.email.data
+
+        # If a new password was typed into the form
+        if form.password.data:
+            hashed_password = generate_password_hash(
+                form.password.data, method="pbkdf2:sha256"
+            )
+
+            if user:
+                # 1. User exists, just update their password
+                user.password = hashed_password
+            else:
+                # 2. User does not exist, grant them portal access for the first time
+                user = User(
+                    username=form.email.data,
+                    email=form.email.data,
+                    password=hashed_password,
+                    role="client",
+                    client_id=client.id,
+                )
+                db.session.add(user)
+
         db.session.commit()
         flash("Client details updated successfully!", "success")
         return redirect(url_for("view_edit_client", client_id=client.id))
 
-    return render_template("view_edit_client.html", form=form, client=client)
+    # Pass 'has_portal_access' to the template
+    return render_template(
+        "view_edit_client.html",
+        form=form,
+        client=client,
+        has_portal_access=has_portal_access,
+    )
 
 
 @app.route("/get_client_email", methods=["GET"])
@@ -2003,6 +2061,32 @@ def search_tickets():
         total = len(tickets)
 
     return render_template("search_tickets.html", q=q, tickets=tickets, total=total)
+
+
+@app.route("/portal")
+@login_required
+def client_portal():
+    # Security check: If a tech or admin tries to go here, send them to the main dashboard
+    if current_user.role != "client":
+        return redirect(url_for("dashboard"))
+
+    # Get only the tickets requested by this specific client
+    client_tickets = (
+        Ticket.query.filter_by(client_id=current_user.client_id)
+        .order_by(
+            db.case(
+                (Ticket.status == "Open", 1),
+                (Ticket.status == "In Progress", 2),
+                (Ticket.status == "Touched", 3),
+                (Ticket.status == "On Hold", 4),
+                (Ticket.status == "Closed", 5),
+            ).asc(),
+            Ticket.updated_at.desc(),
+        )
+        .all()
+    )
+
+    return render_template("client_portal.html", tickets=client_tickets)
 
 
 if __name__ == "__main__":
