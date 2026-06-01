@@ -197,6 +197,8 @@ class Company(db.Model):
         db.String(50), nullable=False
     )  # Lead, Customer, Former Customer
 
+    qbo_customer_id = db.Column(db.String(100), nullable=True)
+
     # Relationship with clients (employees)
     employees = db.relationship("Client", back_populates="company", lazy=True)
 

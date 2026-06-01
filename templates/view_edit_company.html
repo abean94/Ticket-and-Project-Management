@@ -67,6 +67,18 @@
                 {{ form.customer_type(class="form-control") }}
             </div>
 
+            <div class="mb-3">
+                {{ form.customer_type.label(class="form-label") }}
+                {{ form.customer_type(class="form-control") }}
+            </div>
+
+            <div class="mb-3 p-3 bg-light border rounded">
+                <label class="form-label text-success fw-bold">QuickBooks Integration</label>
+                {{ form.qbo_customer_id.label(class="form-label") }}
+                {{ form.qbo_customer_id(class="form-control", placeholder="e.g., 58") }}
+                <small class="text-muted">You can find this ID in the URL when viewing a customer in QuickBooks Online.</small>
+            </div>
+
             <button type="submit" class="btn btn-primary">Update Company</button>
         </form>
 
@@ -84,11 +96,11 @@
         {% else %}
             <p>No employees found for this company.</p>
         {% endif %}
-        
+
         <a href="{{url_for('create_client')}}" class="btn btn-primary">Add Employee</a>
 
         <hr>
-            
+
 
         <a href="{{ url_for('dashboard_today') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
     </div>

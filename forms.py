@@ -249,6 +249,12 @@ class EditCompanyForm(FlaskForm):
         ],
         validators=[InputRequired()],
     )
+    qbo_customer_id = StringField(
+        "QuickBooks Customer ID", validators=[Optional(), Length(max=100)]
+    )
+
+    submit = SubmitField("Update Company")
+
     submit = SubmitField("Update Company")
 
 

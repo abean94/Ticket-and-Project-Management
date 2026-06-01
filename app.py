@@ -30,11 +30,16 @@ from flask_login import (
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from google_auth_oauthlib.flow import InstalledAppFlow
+from intuitlib.client import AuthClient
+from intuitlib.enums import Scopes
 from markdownify import markdownify
 from pytz import UTC, timezone
+from quickbooks import QuickBooks
+from quickbooks.objects import Invoice, SalesItemLine, SalesItemLineDetail
+from quickbooks.objects.base import Ref
 from sqlalchemy import and_, func, or_
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.sql import text
+from sqlalchemy.sql import func, text
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from config import Config
@@ -1511,7 +1516,6 @@ def view_edit_company(company_id):
     form = EditCompanyForm(obj=company)
 
     if form.validate_on_submit():
-        # Update company details
         company.name = form.name.data
         company.street_address = form.street_address.data
         company.city = form.city.data
@@ -1519,13 +1523,15 @@ def view_edit_company(company_id):
         company.zip_code = form.zip_code.data
         company.main_phone = form.main_phone.data
         company.customer_type = form.customer_type.data
+
+        # ADD THIS: Save the QBO ID
+        company.qbo_customer_id = form.qbo_customer_id.data
+
         db.session.commit()
         flash("Company details updated successfully!", "success")
         return redirect(url_for("view_edit_company", company_id=company.id))
 
-    # Retrieve clients (employees) for this company
     clients = Client.query.filter_by(company_id=company_id).all()
-
     return render_template(
         "view_edit_company.html", form=form, company=company, clients=clients
     )
@@ -2087,6 +2093,132 @@ def client_portal():
     )
 
     return render_template("client_portal.html", tickets=client_tickets)
+
+
+def get_qbo_auth_client():
+    return AuthClient(
+        client_id=app.config["QBO_CLIENT_ID"],
+        client_secret=app.config["QBO_CLIENT_SECRET"],
+        environment=app.config["QBO_ENVIRONMENT"],  # 'sandbox' or 'production'
+        redirect_uri=app.config["QBO_REDIRECT_URI"],
+    )
+
+
+@app.route("/authorize_qbo")
+@login_required
+def authorize_qbo():
+    if current_user.role != "admin":
+        return redirect(url_for("dashboard"))
+
+    auth_client = get_qbo_auth_client()
+    url = auth_client.get_authorization_url([Scopes.ACCOUNTING])
+    return redirect(url)
+
+
+@app.route("/qbo_callback")
+@login_required
+def qbo_callback():
+    auth_client = get_qbo_auth_client()
+    auth_code = request.args.get("code")
+    realm_id = request.args.get("realmId")
+
+    if auth_code:
+        auth_client.get_bearer_token(auth_code, realm_id=realm_id)
+        # Store in session for MVP workflow
+        session["qbo_access_token"] = auth_client.access_token
+        session["qbo_refresh_token"] = auth_client.refresh_token
+        session["qbo_realm_id"] = realm_id
+        flash("QuickBooks authorized successfully!", "success")
+
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/push_invoice_to_qbo/<int:ticket_id>", methods=["POST"])
+@login_required
+def push_invoice_to_qbo(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
+    company = ticket.client.company
+
+    # Check session first (Production), fallback to .env (Local Dev)
+    refresh_token = (
+        session.get("qbo_refresh_token") or app.config["QBO_DEV_REFRESH_TOKEN"]
+    )
+    realm_id = session.get("qbo_realm_id") or app.config["QBO_DEV_REALM_ID"]
+
+    if not refresh_token or not realm_id:
+        flash("Please authorize QuickBooks first from the Admin Dashboard.", "warning")
+        return redirect(url_for("billing_dashboard"))
+
+    if not company.qbo_customer_id:
+        flash(
+            f"Please edit {company.name} and add their QuickBooks Customer ID first.",
+            "danger",
+        )
+        return redirect(url_for("billing_dashboard"))
+
+    # ... The rest of your exact same hours-calculation code ...
+    total_time_minutes = (
+        db.session.query(
+            func.sum(
+                func.timestampdiff(
+                    text("MINUTE"),
+                    TicketNote.note_start_time,
+                    TicketNote.note_finish_time,
+                )
+            )
+        )
+        .filter_by(ticket_id=ticket.id)
+        .scalar()
+        or 0
+    )
+
+    total_hours = round(float(total_time_minutes) / 60.0, 2)
+
+    if total_hours == 0:
+        flash(
+            f"Ticket #{ticket.id} has 0 billable hours. Invoice not created.", "warning"
+        )
+        return redirect(url_for("billing_dashboard"))
+
+    try:
+        # Initialize client with the tokens we grabbed above
+        client = QuickBooks(
+            auth_client=get_qbo_auth_client(),
+            refresh_token=refresh_token,
+            company_id=realm_id,
+        )
+
+        # Build the QBO Invoice
+        invoice = Invoice()
+        invoice.CustomerRef = Ref()
+        invoice.CustomerRef.value = company.qbo_customer_id
+
+        line = SalesItemLine()
+        line.LineNum = 1
+        line.Description = f"IT Services: {ticket.subject} (Ticket #{ticket.id})"
+        line.Amount = total_hours * 195.00  # <--- Adjust to your rate
+
+        line.SalesItemLineDetail = SalesItemLineDetail()
+        line.SalesItemLineDetail.Qty = total_hours
+        line.SalesItemLineDetail.UnitPrice = 195.00  # <--- Adjust to your rate
+
+        # ItemRef '1' usually maps to the default "Services" item in QBO.
+        # You may need to change this ID to match your specific "Hourly Labor" item.
+        line.SalesItemLineDetail.ItemRef = Ref()
+        line.SalesItemLineDetail.ItemRef.value = "1"
+
+        invoice.Line.append(line)
+        invoice.save(qb=client)
+
+        # Mark as invoiced locally!
+        ticket.billable = "I"
+        db.session.commit()
+        flash(f"Draft Invoice created in QBO for Ticket #{ticket.id}!", "success")
+
+    except Exception as e:
+        flash(f"QBO API Error: {str(e)}", "danger")
+
+    return redirect(url_for("billing_dashboard"))
 
 
 if __name__ == "__main__":

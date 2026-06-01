@@ -79,15 +79,21 @@
                             <td>
                                 <a href="{{ url_for('view_ticket', id=ticket.id) }}" class="btn btn-info btn-sm">View</a>
                             </td>
-                            <td><form method="POST" action="{{ url_for('toggle_invoiced', ticket_id=ticket.id) }}">
-                                <button type="submit" class="btn btn-success">
+                            <td>
+                                    <form method="POST" action="{{ url_for('toggle_invoiced', ticket_id=ticket.id) }}" class="mb-1">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary w-100">
+                                            {% if ticket.billable == "I" %} Unmark Invoiced {% else %} Mark Invoiced (Manual) {% endif %}
+                                        </button>
+                                    </form>
+
                                     {% if ticket.billable == "R" %}
-                                        Mark as Invoiced
-                                    {% else %}
-                                        Mark as Not Invoiced
+                                    <form method="POST" action="{{ url_for('push_invoice_to_qbo', ticket_id=ticket.id) }}">
+                                        <button type="submit" class="btn btn-sm btn-success w-100 fw-bold">
+                                            Push to QBO
+                                        </button>
+                                    </form>
                                     {% endif %}
-                                </button>
-                            </form></td>
+                                </td>
                         </tr>
                     {% endfor %}
                 </tbody>
