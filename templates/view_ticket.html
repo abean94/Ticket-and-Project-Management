@@ -298,6 +298,15 @@
                             </p>
                             <p><strong>Note Content:</strong></p>
                             <div class="markdown-content">{{ note.content | markdown | safe }}</div>
+                            <p class="mb-1 text-primary">
+                                <strong><i class="fa fa-user"></i>
+                                    {% if note.user %}
+                                        {{ note.user.username }}
+                                    {% else %}
+                                        System / Unknown
+                                    {% endif %}
+                                </strong>
+                            </p>
                             {% if note.is_resolution %}
                                 <span class="badge bg-success mb-2">Resolution</span>
                             {% endif %}
