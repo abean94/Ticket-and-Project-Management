@@ -39,7 +39,7 @@
             gap: 10px;
 
         }
-        a, .btn {
+        a, {
             padding: 5px;
             margin: 3px;
             width: 100px; /* Adjust the width as needed */
@@ -49,6 +49,19 @@
             line-height: 40px; /* Centers the text vertically */
             margin: 5px; /* Adds spacing between buttons */
         }
+
+        /* Removed fixed width/height so Bootstrap buttons can size properly */
+        .btn {
+            min-width: 100px; /* Keeps small buttons looking uniform, but lets larger ones stretch */
+            margin: 5px;
+        }
+
+        /* Specific sizing just for the sticky sidebar buttons if needed */
+        .sticky-buttons .btn,
+        .sticky-buttons a {
+            min-width: 180px;
+        }
+
         @media (max-width: 1750px) {
             .sticky-buttons {
                 display: none;
@@ -84,7 +97,7 @@
                 display: none;
             }
         }
-        
+
         /* Markdown content styles */
         .markdown-content {
             background-color: #f8f9fa;
@@ -93,7 +106,7 @@
             border-left: 4px solid #007bff;
             margin: 10px 0;
         }
-        
+
         .markdown-content h1,
         .markdown-content h2,
         .markdown-content h3,
@@ -104,13 +117,13 @@
             margin-bottom: 0.5rem;
             color: #333;
         }
-        
+
         .markdown-content ul,
         .markdown-content ol {
             margin: 0.5rem 0;
             padding-left: 1.5rem;
         }
-        
+
         .markdown-content code {
             background-color: #e9ecef;
             padding: 0.2rem 0.4rem;
@@ -118,7 +131,7 @@
             font-family: 'Courier New', monospace;
             font-size: 0.875em;
         }
-        
+
         .markdown-content pre {
             background-color: #f8f9fa;
             padding: 1rem;
@@ -126,12 +139,12 @@
             overflow-x: auto;
             margin: 1rem 0;
         }
-        
+
         .markdown-content pre code {
             background: none;
             padding: 0;
         }
-        
+
         .markdown-content blockquote {
             border-left: 4px solid #dee2e6;
             padding-left: 1rem;
@@ -139,25 +152,25 @@
             color: #6c757d;
             font-style: italic;
         }
-        
+
         .markdown-content table {
             border-collapse: collapse;
             width: 100%;
             margin: 1rem 0;
         }
-        
+
         .markdown-content th,
         .markdown-content td {
             border: 1px solid #dee2e6;
             padding: 0.5rem;
             text-align: left;
         }
-        
+
         .markdown-content th {
             background-color: #f8f9fa;
             font-weight: 600;
         }
-        
+
         /* Code block styling for display view */
         .markdown-content pre {
             background-color: #f6f8fa;
@@ -168,7 +181,7 @@
             border: 1px solid #e1e4e8;
             position: relative;
         }
-        
+
         .markdown-content pre code {
             background: none;
             padding: 0;
@@ -179,7 +192,7 @@
             display: block;
             white-space: pre;
         }
-        
+
         .markdown-content code {
             background-color: #f6f8fa;
             border-radius: 3px;
@@ -194,7 +207,7 @@
 <body>
     <div class="container">
         <h2>Ticket Details</h2>
-        
+
     <!-- Flash messages for success or errors -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -227,14 +240,14 @@
                     {% set meeting_title = COMPANY_NAME ~ " - Ticket #" ~ ticket.id ~ " - " ~ ticket.subject %}
                     {% set meeting_body = "Details: " ~ ticket.description %}
 
-                    <a href="https://calendar.google.com/calendar/u/0/r/eventedit?add={{ ticket.requestor_email }}&text={{ meeting_title | urlencode }}&details={{ meeting_body | urlencode }}" 
-                    target="_blank" 
+                    <a href="https://calendar.google.com/calendar/u/0/r/eventedit?add={{ ticket.requestor_email }}&text={{ meeting_title | urlencode }}&details={{ meeting_body | urlencode }}"
+                    target="_blank"
                     class="btn btn-outline-primary mt-2 w-100 no-print">
                         📅 Schedule Google Meet
                     </a>
 
-                    <a href="https://outlook.office.com/calendar/0/deeplink/compose?to={{ ticket.requestor_email }}&subject={{ meeting_title | urlencode }}&body={{ meeting_body | urlencode }}" 
-                    target="_blank" 
+                    <a href="https://outlook.office.com/calendar/0/deeplink/compose?to={{ ticket.requestor_email }}&subject={{ meeting_title | urlencode }}&body={{ meeting_body | urlencode }}"
+                    target="_blank"
                     class="btn btn-outline-info mt-2 w-100 no-print">
                         📆 Schedule Teams Meeting
                     </a>
@@ -286,9 +299,22 @@
                             <p><strong>Note Content:</strong></p>
                             <div class="markdown-content">{{ note.content | markdown | safe }}</div>
                             {% if note.is_resolution %}
-                                <span class="badge bg-success">Resolution</span>
+                                <span class="badge bg-success mb-2">Resolution</span>
                             {% endif %}
-                            <a href="{{ url_for('edit_note', note_id=note.id) }}" class="btn btn-warning ms-auto no-print">Edit Note</a>
+
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <a href="{{ url_for('edit_note', note_id=note.id) }}" class="btn btn-warning no-print">Edit Note</a>
+                                <form method="POST" action="{{ url_for('toggle_resolution', note_id=note.id) }}" class="m-0">
+                                    <button type="submit" class="btn btn-outline-info">
+                                        {% if note.is_resolution %}
+                                            Unmark as Resolution
+                                        {% else %}
+                                            Mark as Resolution
+                                        {% endif %}
+                                    </button>
+                                </form>
+                            </div>
+
                         </div>
                     </li>
                 {% endfor %}
@@ -397,7 +423,7 @@
                 noteTextarea.dataset.markdownInitialized = 'true';
             }
         });
-        
+
         // Apply syntax highlighting to existing markdown content
         if (typeof Prism !== 'undefined') {
             Prism.highlightAll();
