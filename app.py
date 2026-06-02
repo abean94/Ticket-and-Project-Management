@@ -1,7 +1,7 @@
 import pickle
 import random
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from io import BytesIO
 
 import bleach
@@ -953,23 +953,43 @@ def mark_reviewed_nonbillable(ticket_id):
 @app.route("/billing_dashboard", methods=["GET", "POST"])
 @login_required
 def billing_dashboard():
+    # 1. Save dates to session ONLY if they aren't blank
+    if request.method == "POST":
+        start_val = request.form.get("start_date")
+        end_val = request.form.get("end_date")
 
-    # Default date range: last 7 days
-    start_date = request.form.get("start_date") or datetime.now().replace(
-        day=1
-    ).strftime("%Y-%m-%d")
-    end_date = request.form.get("end_date") or datetime.now().strftime("%Y-%m-%d")
+        if start_val:
+            session["billing_start_date"] = start_val
+        if end_val:
+            session["billing_end_date"] = end_val
 
-    # Convert strings to datetime objects
-    start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
-    end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
+        return redirect(url_for("billing_dashboard"))
+
+    # 2. Get dates from session
+    start_str = session.get("billing_start_date")
+    end_str = session.get("billing_end_date")
+
+    # Force defaults if the session returned None or an empty string ""
+    if not start_str:
+        start_str = "2023-01-01"
+    if not end_str:
+        end_str = datetime.today().strftime("%Y-%m-%d")
+
+    # 3. Parse strings into datetime objects and fix the midnight bug
+    start_date = datetime.strptime(start_str, "%Y-%m-%d")
+    # Add 1 day, subtract 1 second to make it 23:59:59 of the selected day
+    end_date = (
+        datetime.strptime(end_str, "%Y-%m-%d")
+        + timedelta(days=1)
+        - timedelta(seconds=1)
+    )
 
     # Get billable tickets (B) within the selected date range
     tickets = (
         Ticket.query.filter(
             Ticket.billable == "R",
-            Ticket.completed_at >= start_date_obj,
-            Ticket.completed_at <= end_date_obj,
+            Ticket.completed_at >= start_date,
+            Ticket.completed_at <= end_date,
         )
         .order_by(
             db.case(
@@ -1018,8 +1038,8 @@ def billing_dashboard():
         "billing_dashboard.html",
         tickets=tickets,
         ticket_totals=ticket_totals,
-        start_date=start_date,
-        end_date=end_date,
+        start_date=start_str,
+        end_date=end_str,
     )
 
 
@@ -2219,6 +2239,194 @@ def push_invoice_to_qbo(ticket_id):
         flash(f"QBO API Error: {str(e)}", "danger")
 
     return redirect(url_for("billing_dashboard"))
+
+
+@app.route("/batch_push_qbo", methods=["POST"])
+@login_required
+def batch_push_qbo():
+    # 1. Get the list of selected ticket IDs from the checkboxes
+    ticket_ids = request.form.getlist("ticket_ids")
+
+    if not ticket_ids:
+        flash("No tickets selected for batch push.", "warning")
+        return redirect(url_for("billing_dashboard"))
+
+    if "qbo_access_token" not in session and not app.config.get(
+        "QBO_DEV_REFRESH_TOKEN"
+    ):
+        flash("Please authorize QuickBooks first.", "warning")
+        return redirect(url_for("billing_dashboard"))
+
+    # Retrieve QBO credentials
+    refresh_token = session.get("qbo_refresh_token") or app.config.get(
+        "QBO_DEV_REFRESH_TOKEN"
+    )
+    realm_id = session.get("qbo_realm_id") or app.config.get("QBO_DEV_REALM_ID")
+
+    try:
+        client = QuickBooks(
+            auth_client=get_qbo_auth_client(),
+            refresh_token=refresh_token,
+            company_id=realm_id,
+        )
+    except Exception as e:
+        flash(f"QBO Authentication Error: {str(e)}", "danger")
+        return redirect(url_for("billing_dashboard"))
+
+    # 2. Query the selected tickets and group them by company
+    selected_tickets = Ticket.query.filter(Ticket.id.in_(ticket_ids)).all()
+
+    # Dictionary to hold tickets grouped by company: { company_id: [ticket1, ticket2] }
+    company_batches = {}
+    for t in selected_tickets:
+        comp_id = t.client.company_id
+        if comp_id not in company_batches:
+            company_batches[comp_id] = []
+        company_batches[comp_id].append(t)
+
+    invoices_created = 0
+
+    # 3. Build ONE invoice per company
+    for comp_id, tickets in company_batches.items():
+        company = Company.query.get(comp_id)
+
+        if not company.qbo_customer_id:
+            flash(f"Skipped {company.name} - Missing QBO Customer ID.", "danger")
+            continue
+
+        invoice = Invoice()
+        invoice.CustomerRef = Ref()
+        invoice.CustomerRef.value = company.qbo_customer_id
+
+        has_billable_lines = False
+
+        # Add a line item for each ticket in this batch
+        line_num = 1
+        for ticket in tickets:
+            # Calculate hours
+            total_time_minutes = (
+                db.session.query(
+                    func.sum(
+                        func.timestampdiff(
+                            text("MINUTE"),
+                            TicketNote.note_start_time,
+                            TicketNote.note_finish_time,
+                        )
+                    )
+                )
+                .filter_by(ticket_id=ticket.id)
+                .scalar()
+                or 0
+            )
+
+            total_hours = round(float(total_time_minutes) / 60.0, 2)
+
+            if total_hours > 0:
+                line = SalesItemLine()
+                line.LineNum = line_num
+                line.Description = f"Ticket #{ticket.id}: {ticket.subject}"
+                line.Amount = total_hours * 195.00  # Adjust rate as needed
+
+                line.SalesItemLineDetail = SalesItemLineDetail()
+                line.SalesItemLineDetail.Qty = total_hours
+                line.SalesItemLineDetail.UnitPrice = 195.00
+                line.SalesItemLineDetail.ItemRef = Ref()
+                line.SalesItemLineDetail.ItemRef.value = "1"  # Your QBO Item ID
+
+                invoice.Line.append(line)
+                has_billable_lines = True
+                line_num += 1
+
+        # Only save the invoice if there is actual billable time
+        if has_billable_lines:
+            try:
+                invoice.save(qb=client)
+
+                # 4. Mark tickets as invoiced and save the QBO Invoice ID locally
+                for ticket in tickets:
+                    ticket.billable = "I"
+                    ticket.qbo_invoice_id = (
+                        invoice.Id
+                    )  # Save the ID we added in models.py
+
+                invoices_created += 1
+            except Exception as e:
+                flash(f"Error creating invoice for {company.name}: {str(e)}", "danger")
+
+    db.session.commit()
+
+    if invoices_created > 0:
+        flash(
+            f"Successfully pushed {invoices_created} batch invoice(s) to QuickBooks!",
+            "success",
+        )
+
+    return redirect(url_for("billing_dashboard"))
+
+
+@app.route("/invoice_history")
+@login_required
+def invoice_history():
+    # 1. Get all tickets that have been marked invoiced AND have a QBO ID attached
+    invoiced_tickets = (
+        Ticket.query.filter(Ticket.billable == "I", Ticket.qbo_invoice_id.isnot(None))
+        .order_by(Ticket.completed_at.desc())
+        .all()
+    )
+
+    # 2. Group them by QBO Invoice ID so we can display them nicely
+    invoices = {}
+    for ticket in invoiced_tickets:
+        qbo_id = ticket.qbo_invoice_id
+
+        # If this is the first time seeing this Invoice ID, create a fresh dictionary for it
+        if qbo_id not in invoices:
+            invoices[qbo_id] = {
+                "company_name": ticket.client.company.name
+                if ticket.client
+                else "Unknown Company",
+                "total_hours": 0,
+                "tickets": [],
+            }
+
+        # Calculate the hours for this specific ticket
+        total_time_minutes = (
+            db.session.query(
+                func.sum(
+                    func.timestampdiff(
+                        text("MINUTE"),
+                        TicketNote.note_start_time,
+                        TicketNote.note_finish_time,
+                    )
+                )
+            )
+            .filter_by(ticket_id=ticket.id)
+            .scalar()
+            or 0
+        )
+
+        hours = round(float(total_time_minutes) / 60.0, 2)
+
+        # Add the ticket details to the invoice group
+        invoices[qbo_id]["tickets"].append(
+            {
+                "id": ticket.id,
+                "subject": ticket.subject,
+                "hours": hours,
+                "completed_at": ticket.completed_at.strftime("%m/%d/%Y")
+                if ticket.completed_at
+                else "N/A",
+            }
+        )
+
+        # Add the ticket's hours to the invoice's total hours
+        invoices[qbo_id]["total_hours"] += hours
+
+    # 3. Round the final totals to prevent any floating-point weirdness
+    for qbo_id in invoices:
+        invoices[qbo_id]["total_hours"] = round(invoices[qbo_id]["total_hours"], 2)
+
+    return render_template("invoice_history.html", invoices=invoices)
 
 
 if __name__ == "__main__":

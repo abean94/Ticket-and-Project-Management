@@ -37,6 +37,7 @@ class Ticket(db.Model):
     priority = db.Column(db.String(50), nullable=False, default="Important-NotUrgent")
     billable = db.Column(db.String(50), nullable=False, default="NB")
 
+    qbo_invoice_id = db.Column(db.String(100), nullable=True)
     # Foreign key to User (who created the ticket)
     user_id = db.Column(
         db.Integer, db.ForeignKey("user.id", name="fk_ticket_user"), nullable=False
