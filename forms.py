@@ -327,3 +327,36 @@ class UpdatePhaseForm(FlaskForm):
 class RandomNumberForm(FlaskForm):
     number = IntegerField("Range", validators=[InputRequired()])
     submit = SubmitField("Get Number")
+
+
+class AddBulkInventoryForm(FlaskForm):
+    item_name = StringField("Item Name", validators=[DataRequired()])
+    sku = StringField("SKU / Model Number", validators=[Optional()])
+    qty_in_stock = IntegerField("Quantity to Add", validators=[DataRequired()])
+    landed_unit_cost = FloatField(
+        "Landed Unit Cost (Your Cost)", validators=[DataRequired()]
+    )
+    retail_unit_price = FloatField(
+        "Retail Unit Price (Client Cost)", validators=[DataRequired()]
+    )
+    low_stock_threshold = IntegerField("Low Stock Alert Threshold", default=5)
+    submit = SubmitField("Add to Inventory")
+
+
+class AddDeployedAssetForm(FlaskForm):
+    company_id = SelectField(
+        "Assign to Company", coerce=int, validators=[DataRequired()]
+    )
+    model_name = StringField("Model / Asset Name", validators=[DataRequired()])
+    serial_number = StringField("Serial Number", validators=[Optional()])
+    purchase_cost = FloatField("Fully Burdened Cost", validators=[DataRequired()])
+    status = SelectField(
+        "Status",
+        choices=[
+            ("Staged", "Staged (Internal)"),
+            ("Deployed", "Deployed (Active)"),
+            ("Decommissioned", "Decommissioned"),
+        ],
+        default="Staged",
+    )
+    submit = SubmitField("Log Asset")

@@ -44,6 +44,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from config import Config
 from forms import (
+    AddBulkInventoryForm,
+    AddDeployedAssetForm,
     AddNoteForm,
     ChangeRoleForm,
     ClientForm,
@@ -64,7 +66,18 @@ from forms import (
 )
 from gmail_send import send_gmail_message
 from google_calendar import create_event
-from models import Client, Company, Phase, Project, Ticket, TicketNote, User, db
+from models import (
+    BulkInventory,
+    Client,
+    Company,
+    DeployedAsset,
+    Phase,
+    Project,
+    Ticket,
+    TicketNote,
+    User,
+    db,
+)
 
 # db = SQLAlchemy()
 
@@ -2427,6 +2440,57 @@ def invoice_history():
         invoices[qbo_id]["total_hours"] = round(invoices[qbo_id]["total_hours"], 2)
 
     return render_template("invoice_history.html", invoices=invoices)
+
+
+@app.route("/inventory", methods=["GET", "POST"])
+@login_required  # Assuming you use Flask-Login
+def inventory_dashboard():
+    inventory_items = BulkInventory.query.all()
+    deployed_assets = DeployedAsset.query.all()
+
+    # Setup the forms
+    inv_form = AddBulkInventoryForm()
+    asset_form = AddDeployedAssetForm()
+
+    # Populate the company dropdown for the asset form dynamically
+    asset_form.company_id.choices = [
+        (c.id, c.name) for c in Company.query.order_by("name").all()
+    ]
+
+    if inv_form.validate_on_submit() and "Add to Inventory" in request.form.values():
+        new_item = BulkInventory(
+            item_name=inv_form.item_name.data,
+            sku=inv_form.sku.data,
+            qty_in_stock=inv_form.qty_in_stock.data,
+            landed_unit_cost=inv_form.landed_unit_cost.data,
+            retail_unit_price=inv_form.retail_unit_price.data,
+            low_stock_threshold=inv_form.low_stock_threshold.data,
+        )
+        db.session.add(new_item)
+        db.session.commit()
+        flash("Consumable inventory added successfully!", "success")
+        return redirect(url_for("inventory_dashboard"))
+
+    if asset_form.validate_on_submit() and "Log Asset" in request.form.values():
+        new_asset = DeployedAsset(
+            company_id=asset_form.company_id.data,
+            model_name=asset_form.model_name.data,
+            serial_number=asset_form.serial_number.data,
+            purchase_cost=asset_form.purchase_cost.data,
+            status=asset_form.status.data,
+        )
+        db.session.add(new_asset)
+        db.session.commit()
+        flash("Asset logged successfully!", "success")
+        return redirect(url_for("inventory_dashboard"))
+
+    return render_template(
+        "inventory_dashboard.html",
+        inventory_items=inventory_items,
+        deployed_assets=deployed_assets,
+        inv_form=inv_form,
+        asset_form=asset_form,
+    )
 
 
 if __name__ == "__main__":

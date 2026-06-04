@@ -233,3 +233,62 @@ class Client(db.Model):
 
     def __repr__(self):
         return f"<Client {self.first_name} {self.last_name}>"
+
+
+class DeployedAsset(db.Model):
+    __tablename__ = "deployed_assets"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(
+        db.Integer, db.ForeignKey("company.id"), nullable=False
+    )  # Maps to your company table
+    model_name = db.Column(
+        db.String(120), nullable=False
+    )  # e.g., "Switch Pro Max 48 PoE"
+    serial_number = db.Column(db.String(100), unique=True, nullable=True)
+    purchase_cost = db.Column(db.Float, nullable=False)  # Burdened Landed Unit Cost
+    warranty_expiry = db.Column(db.DateTime, nullable=True)  # Track UI Care window
+    status = db.Column(
+        db.String(50), default="Active/Deployed"
+    )  # "Deployed", "Staged", "Decommissioned"
+    date_installed = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<DeployedAsset {self.model_name} - SN: {self.serial_number}>"
+
+
+class BulkInventory(db.Model):
+    __tablename__ = "bulk_inventory"
+
+    id = db.Column(db.Integer, primary_key=True)
+    item_name = db.Column(
+        db.String(120), nullable=False
+    )  # e.g., "SFP+ to RJ45 Adapter"
+    sku = db.Column(db.String(100), unique=True, nullable=True)
+    qty_in_stock = db.Column(db.Integer, default=0)
+    landed_unit_cost = db.Column(db.Float, nullable=False)  # True price paid per unit
+    retail_unit_price = db.Column(db.Float, nullable=False)  # Client invoice price
+    low_stock_threshold = db.Column(db.Integer, default=5)
+
+    def __repr__(self):
+        return f"<BulkInventory {self.item_name} - Qty: {self.qty_in_stock}>"
+
+
+class ClientSubscription(db.Model):
+    __tablename__ = "client_subscriptions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("company.id"), nullable=False)
+    subscription_name = db.Column(
+        db.String(120), nullable=False
+    )  # e.g., "CyberSecure (UDM-SE)"
+    cost_to_msp = db.Column(db.Float, nullable=False)  # What you pay ($99.00)
+    price_to_client = db.Column(db.Float, nullable=False)  # What you bill the customer
+    billing_frequency = db.Column(db.String(50), default="Monthly")
+    next_renewal_date = db.Column(db.DateTime, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+
+    def __repr__(self):
+        return (
+            f"<ClientSubscription {self.subscription_name} - Active: {self.is_active}>"
+        )
