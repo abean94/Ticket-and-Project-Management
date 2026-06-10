@@ -387,7 +387,7 @@
                 class="btn btn-danger w-100"
                 onclick="
                     const originalTitle = document.title;
-                    document.title = 'RVA IT Ticket {{ ticket.id }} - {{ ticket.subject|replace(\"'\", \"\")|replace('\"', '') }}';
+                    document.title = 'RVA IT Ticket {{ ticket.id }} - {{ ticket.subject|replace("'", "")|replace('"', '') }}';
                     window.print();
                     setTimeout(() => { document.title = originalTitle; }, 1000);
                 ">
