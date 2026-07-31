@@ -20,6 +20,7 @@ TOKEN_PATH = Config.TOKEN_PATH  # e.g., 'token_helpdesk.pickle'
 CLIENT_SECRET_PATH = Config.CLIENT_SECRET_PATH
 
 ADMIN_EMAIL = Config.ADMIN_EMAIL  # Change to your admin email
+NEW_TICKET_EMAIL = Config.NEWTICKET_EMAIL
 HELPDESK_EMAIL = Config.COMPANY_SUPPORT_EMAIL
 DEFAULT_USER_ID = 1  # Default user_id for tickets created from email
 
@@ -80,7 +81,7 @@ def extract_email_address(sender):
 
 def notify_admin(sender_email, subject, body):
     send_gmail_message(
-        to=ADMIN_EMAIL,
+        to=NEW_TICKET_EMAIL,
         subject=f"[Helpdesk] Email from non-client: {sender_email}",
         html_body=f"""
         <p>An email was received from <b>{sender_email}</b> who is not a registered client.</p>
@@ -165,7 +166,7 @@ def send_ticket_confirmation(ticket):
         <pre style='background:#f4f4f4;padding:10px;border-radius:5px;'>{ticket.description}</pre>
         """
         send_gmail_message(
-            to=user.email,
+            to=NEW_TICKET_EMAIL,
             subject=subject,
             html_body=html_body
         )
