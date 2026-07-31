@@ -268,7 +268,7 @@
                 <p>
                     <strong>Assigned Tech:</strong> 
                     {% if ticket.assigned_tech %}
-                        <span class="badge bg-primary">{{ ticket.assigned_tech.first_name }} {{ ticket.assigned_tech.last_name }}</span>
+                        <span class="badge bg-primary">{{ ticket.assigned_tech.username }}</span>
                     {% else %}
                         <span class="badge bg-secondary text-muted">Unassigned</span>
                     {% endif %}

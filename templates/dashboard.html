@@ -255,18 +255,23 @@
                             <div class="ticket-subject mb-1">
                                 <strong>#{{ ticket.id }} - {{ ticket.subject }}</strong>
                             </div>
-                        <div class="ticket-info">
-                            <p class="mb-0 text-muted" style="font-size: 0.9em;">
-                                <strong>Status:</strong> {{ ticket.status }} | 
-                                <strong>Priority:</strong> {{ ticket.priority }} |
-                                <strong>Tech:</strong> 
-                                {% if ticket.assigned_tech %}
-                                    <span class="badge bg-primary">{{ ticket.assigned_tech.username }}</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Unassigned</span>
-                                {% endif %}
-                            </p>
-                        </div>
+                        <div class="ticket-details">
+                            <div class="ticket-subject mb-1">
+                                <strong>#{{ ticket.id }} - {{ ticket.subject }}</strong>
+                            </div>
+                            <div class="ticket-info">
+                                <p class="mb-0 text-muted" style="font-size: 0.9em;">
+                                    <strong>Status:</strong> {{ ticket.status }} | 
+                                    <strong>Priority:</strong> {{ ticket.priority }} |
+                                    <strong>Tech:</strong> 
+                                    {% if ticket.assigned_tech %}
+                                        <span class="badge bg-primary">{{ ticket.assigned_tech.username }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Unassigned</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div> <!-- THIS WAS THE MISSING DIV -->
                         <div class="ticket-time">
                             <i class="fa fa-clock-o"></i>
                             <span>{{ ticket.age }}</span>
