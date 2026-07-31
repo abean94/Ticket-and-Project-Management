@@ -265,7 +265,14 @@
                 </p>
                 <p><strong>Estimated Hours:</strong> {{ ticket.estimated_hours }}</p>
                 <p><strong>Billable Status:</strong> {{ "Billable" if ticket.billable == "R" else "Non-Billable" }}</p>
-
+                <p>
+                    <strong>Assigned Tech:</strong> 
+                    {% if ticket.assigned_tech %}
+                        <span class="badge bg-primary">{{ ticket.assigned_tech.first_name }} {{ ticket.assigned_tech.last_name }}</span>
+                    {% else %}
+                        <span class="badge bg-secondary text-muted">Unassigned</span>
+                    {% endif %}
+                </p>
                 {% if ticket.complete %}
                     <p><strong>Completed At:</strong> {{ ticket.completed_at.strftime('%m/%d/%y %H:%M') }}</p>
                 {% endif %}

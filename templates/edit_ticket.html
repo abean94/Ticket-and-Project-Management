@@ -141,6 +141,12 @@
                         {{ update_form.estimated_hours.label(class="form-label") }}
                         {{ update_form.estimated_hours(class="form-control", value=ticket.estimated_hours) }}
                     </div>
+
+                    <div class="form-group mb-3">
+                        {{ update_form.assigned_tech_id.label(class="form-label fw-bold") }}
+                        {{ update_form.assigned_tech_id(class="form-control") }}
+                    </div>
+
                 </div>
             </div>
             

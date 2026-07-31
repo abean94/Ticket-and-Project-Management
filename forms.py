@@ -11,6 +11,7 @@ from wtforms import (
     StringField,
     SubmitField,
     TextAreaField,
+    SelectField
 )
 from wtforms.validators import (
     DataRequired,
@@ -91,6 +92,7 @@ class TicketForm(FlaskForm):
             NumberRange(min=0, message="Estimated hours must be positive"),
         ],
     )
+    assigned_tech_id = SelectField('Assign Technician', coerce=int)
     submit = SubmitField("Create Ticket")
 
 
@@ -132,6 +134,7 @@ class UpdateTicketForm(FlaskForm):
             NumberRange(min=0, message="Estimated hours must be positive"),
         ],
     )
+    assigned_tech_id = SelectField('Assign Technician', coerce=int, validators=[Optional()])
     submit = SubmitField("Update Ticket")
 
 
@@ -277,7 +280,7 @@ class ChangeRoleForm(FlaskForm):
     user_id = HiddenField("User ID", validators=[InputRequired()])
     role = SelectField(
         "Role",
-        choices=[("user", "User"), ("admin", "Admin")],
+        choices=[("user", "User"),("technician", "Technician"),("admin", "Admin")],
         validators=[InputRequired()],
     )
 

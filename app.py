@@ -174,6 +174,61 @@ SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 CLIENT_SECRET_PATH = app.config["CLIENT_SECRET_PATH"]
 TOKEN_PATH = app.config["TOKEN_PATH"]
 
+def send_assignment_email(ticket):
+    """Helper function to send email notification to an assigned technician."""
+    if not ticket.assigned_tech or not ticket.assigned_tech.email:
+        return
+
+    subject = f"[Assigned] Ticket #{ticket.id} - {ticket.subject}"
+    logo_url = Config.LOGO_URL
+
+    client_info = (
+        f"{ticket.client.first_name} {ticket.client.last_name}"
+        if ticket.client
+        else "N/A"
+    )
+
+    body = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; background-color: #e0e6ed; color: #2a3f54; padding: 20px; }}
+            .container {{ max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border-radius: 10px; }}
+            h2 {{ color: #1b3a57; }}
+            .ticket-details {{ background-color: #cbd5e0; padding: 15px; border-radius: 5px; margin: 15px 0; }}
+            .footer {{ text-align: center; font-size: 0.9em; color: #2a3f54; margin-top: 20px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div style="text-align: center;">
+                <img src="{logo_url}" alt="Logo" style="max-width: 200px; margin-bottom: 20px;">
+            </div>
+            <h2>New Ticket Assignment</h2>
+            <p>Hello <strong>{ticket.assigned_tech.username}</strong>,</p>
+            <p>You have been assigned to Ticket <strong>#{ticket.id}</strong>:</p>
+            <div class="ticket-details">
+                <p><strong>Subject:</strong> {ticket.subject}</p>
+                <p><strong>Priority:</strong> {ticket.priority}</p>
+                <p><strong>Status:</strong> {ticket.status}</p>
+                <p><strong>Client:</strong> {client_info}</p>
+                <p><strong>Description:</strong></p>
+                <div style="background-color: #ffffff; padding: 10px; border-left: 4px solid #007bff; margin-top: 5px;">
+                    {md.convert(ticket.description or '')}
+                </div>
+            </div>
+            <p>Please log in to review and respond to this ticket.</p>
+            <div class="footer">
+                <p>{Config.COMPANY_NAME} | Contact Us: {Config.COMPANY_SUPPORT_PHONE} | {Config.COMPANY_SUPPORT_EMAIL}</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    try:
+        send_gmail_message(to=ticket.assigned_tech.email, subject=subject, html_body=body)
+    except Exception as e:
+        print(f"Error sending assignment email: {e}")
 
 @app.before_request
 def before_request():
@@ -346,6 +401,7 @@ def download_tickets_excel():
                 "Estimated Hours": ticket.estimated_hours,
                 "Project": ticket.project.name if ticket.project else "No Project",
                 "Phase": ticket.phase.name if ticket.phase else "No Phase",
+                "Assigned Tech": ticket.assigned_tech.username if ticket.assigned_tech else "Unassigned",
             }
         )
 
@@ -530,6 +586,13 @@ def new_ticket():
         for client in clients
     ]
 
+    users = User.query.filter(User.role.in_(['admin', 'technician'])).all()
+    if not users:
+        users = User.query.all()
+    form.assigned_tech_id.choices = [(0, "Unassigned")] + [
+        (u.id, f"{u.username} ({u.email})") for u in users
+    ]
+
     # Populate phase choices if a project is selected
     if project_id:
         project = Project.query.get_or_404(project_id)
@@ -542,6 +605,11 @@ def new_ticket():
 
     # Validate and handle the form submission
     if form.validate_on_submit():
+        assigned_tech_id = (
+            form.assigned_tech_id.data
+            if form.assigned_tech_id.data and form.assigned_tech_id.data != 0
+            else None
+        )
         # Create the ticket
         ticket = Ticket(
             subject=form.subject.data,
@@ -549,6 +617,7 @@ def new_ticket():
             priority=form.priority.data,
             status=form.status.data,
             user_id=current_user.id,  # User who created the ticket
+            assigned_tech_id=assigned_tech_id, # ADDED
             phase_id=form.phase_id.data if form.phase_id.data != 0 else None,
             project_id=project_id,
             client_id=form.client_id.data,  # Link the requestor (client)
@@ -559,6 +628,9 @@ def new_ticket():
         )
         db.session.add(ticket)
         db.session.commit()
+        if ticket.assigned_tech_id:
+            send_assignment_email(ticket)
+            
         flash("Ticket created successfully!", "success")
         # Redirect based on whether it’s linked to a project
         if phase_id:
@@ -769,23 +841,29 @@ def send_note_email(requestor_email, ticket, note):
 def edit_ticket(id):
     ticket = Ticket.query.get_or_404(id)
 
-    # ✅ Fix: Normalize due_date before binding to the form
     if ticket.due_date and isinstance(ticket.due_date, str):
         try:
             ticket.due_date = parser.parse(ticket.due_date)
         except ValueError:
             ticket.due_date = None
 
-    update_form = UpdateTicketForm(obj=ticket)  # ✅ Moved here
+    update_form = UpdateTicketForm(obj=ticket)
 
-    # Populate client (employee) choices
+    # Populate client choices
     clients = Client.query.all()
     update_form.client_id.choices = [
         (client.id, f"{client.first_name} {client.last_name} ({client.company.name})")
         for client in clients
     ]
 
-    # Set phase choices only if the ticket is linked to a project with phases
+    # ADDED: Populate assigned technician choices
+    users = User.query.filter(User.role.in_(['admin', 'technician'])).all()
+    if not users:
+        users = User.query.all()
+    update_form.assigned_tech_id.choices = [(0, "Unassigned")] + [
+        (u.id, f"{u.username} ({u.email})") for u in users
+    ]
+
     if ticket.project_id:
         project = Project.query.get(ticket.project_id)
         if project and project.phases:
@@ -795,8 +873,13 @@ def edit_ticket(id):
     else:
         update_form.phase_id.choices = [(0, "No Project Assigned")]
 
+    # ADDED: Pre-select assigned tech on GET request
+    if request.method == "GET":
+        update_form.assigned_tech_id.data = ticket.assigned_tech_id or 0
+
     if request.method == "POST" and update_form.validate_on_submit():
-        # Update the ticket fields with form data
+        old_tech_id = ticket.assigned_tech_id # ADDED: Track previous tech
+
         ticket.subject = update_form.subject.data
         ticket.description = update_form.description.data
         ticket.status = update_form.status.data
@@ -809,13 +892,25 @@ def edit_ticket(id):
         )
         ticket.estimated_hours = update_form.estimated_hours.data
 
-        # Check if due_date is provided in the form, else retain the current due_date
+        # ADDED: Check and assign new tech ID
+        new_tech_id = (
+            update_form.assigned_tech_id.data
+            if update_form.assigned_tech_id.data != 0
+            else None
+        )
+        ticket.assigned_tech_id = new_tech_id
+
         if update_form.due_date.data:
             ticket.due_date = update_form.due_date.data
 
         db.session.commit()
+
+        # ADDED: Send notification email if assigned technician changed
+        if new_tech_id and new_tech_id != old_tech_id:
+            send_assignment_email(ticket)
+
         flash("Ticket updated successfully!", "success")
-        return "Updated", 200  # Return a success status
+        return "Updated", 200
 
     return render_template("edit_ticket.html", ticket=ticket, update_form=update_form)
 
@@ -1645,14 +1740,18 @@ def admin_dashboard():
     users = User.query.all()
     role_form = ChangeRoleForm()
 
-    if role_form.validate_on_submit():
-        user_id = role_form.user_id.data
-        new_role = role_form.role.data
-        user = User.query.get(user_id)
-        if user:
-            user.role = new_role
-            db.session.commit()
-            flash(f"Role for {user.username} updated to {new_role}.", "success")
+    if request.method == "POST":
+        user_id = request.form.get("user_id")
+        new_role = request.form.get("role")
+        
+        # Fixed SQLAlchemy 2.0 syntax & converted ID to integer
+        if user_id and user_id.isdigit():
+            user = db.session.get(User, int(user_id))
+            if user:
+                user.role = new_role
+                db.session.commit()
+                flash(f"Role for {user.username} updated to {new_role}.", "success")
+        
         return redirect(url_for("admin_dashboard"))
 
     return render_template("admin_dashboard.html", users=users, role_form=role_form)

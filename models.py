@@ -101,6 +101,9 @@ class Ticket(db.Model):
     # Relationship to the company (through the client)
     client = db.relationship("Client", back_populates="tickets")
 
+    assigned_tech_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    assigned_tech = db.relationship('User', foreign_keys=[assigned_tech_id], backref='assigned_tickets')
+
     def __repr__(self):
         return f"<Ticket {self.subject}>"
 
