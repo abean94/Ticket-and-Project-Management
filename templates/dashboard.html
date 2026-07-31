@@ -251,10 +251,7 @@
                         <div class="ticket-user">
                             <span class="user-name">{{ ticket.client.first_name }}</span>
                         </div>
-                        <div class="ticket-details">
-                            <div class="ticket-subject mb-1">
-                                <strong>#{{ ticket.id }} - {{ ticket.subject }}</strong>
-                            </div>
+                        
                         <div class="ticket-details">
                             <div class="ticket-subject mb-1">
                                 <strong>#{{ ticket.id }} - {{ ticket.subject }}</strong>
@@ -271,7 +268,8 @@
                                     {% endif %}
                                 </p>
                             </div>
-                        </div> <!-- THIS WAS THE MISSING DIV -->
+                        </div> <!-- This closes ticket-details -->
+
                         <div class="ticket-time">
                             <i class="fa fa-clock-o"></i>
                             <span>{{ ticket.age }}</span>
