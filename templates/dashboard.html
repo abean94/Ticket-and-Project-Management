@@ -18,7 +18,7 @@
     <div class="card-header bg-white">
         <div class="d-flex flex-wrap align-items-center gap-2" style="gap: 10px;">
             <!-- Search Box -->
-            <div class="input-group input-group-sm" style="max-width: 300px;">
+            <div class="input-group input-group-sm" style="max-width: 280px;">
                 <input type="text" id="ticketSearchInput" placeholder="Search ticket #, name, or subject" class="form-control">
                 <div class="input-group-append">
                     <button class="btn btn-primary" onclick="searchTicket()">
@@ -28,11 +28,11 @@
             </div>
 
             <!-- Technician Filter Dropdown -->
-            <div class="input-group input-group-sm" style="max-width: 250px;">
+            <div class="input-group input-group-sm" style="max-width: 220px;">
                 <div class="input-group-prepend">
-                    <label class="input-group-text bg-light" for="techFilterSelect"><i class="fas fa-filter mr-1"></i> Tech</label>
+                    <label class="input-group-text bg-light" for="techFilterSelect"><i class="fas fa-user-tag mr-1"></i> Tech</label>
                 </div>
-                <select id="techFilterSelect" class="custom-select custom-select-sm" onchange="filterByTech()">
+                <select id="techFilterSelect" class="custom-select custom-select-sm" onchange="applyFilters()">
                     <option value="all" selected>All Technicians</option>
                     <option value="unassigned">Unassigned</option>
                     {% set tech_list = [] %}
@@ -42,6 +42,22 @@
                             <option value="{{ ticket.assigned_tech.username }}">{{ ticket.assigned_tech.username }}</option>
                         {% endif %}
                     {% endfor %}
+                </select>
+            </div>
+
+            <!-- Status Filter Dropdown -->
+            <div class="input-group input-group-sm" style="max-width: 210px;">
+                <div class="input-group-prepend">
+                    <label class="input-group-text bg-light" for="statusFilterSelect"><i class="fas fa-filter mr-1"></i> Status</label>
+                </div>
+                <select id="statusFilterSelect" class="custom-select custom-select-sm" onchange="applyFilters()">
+                    <option value="all">All Statuses</option>
+                    <option value="hide_closed">Hide Closed</option>
+                    <option value="open">Open</option>
+                    <option value="in progress">In Progress</option>
+                    <option value="touched">Touched</option>
+                    <option value="on hold">On Hold</option>
+                    <option value="closed">Closed</option>
                 </select>
             </div>
         </div>
@@ -62,7 +78,9 @@
                 </thead>
                 <tbody>
                     {% for ticket in tickets %}
-                    <tr class="ticket-item" data-tech="{{ ticket.assigned_tech.username if ticket.assigned_tech else 'unassigned' }}">
+                    <tr class="ticket-item" 
+                        data-tech="{{ ticket.assigned_tech.username if ticket.assigned_tech else 'unassigned' }}"
+                        data-status="{{ ticket.status | lower }}">
                         <td class="text-center align-middle">
                             <span class="badge {% if ticket.priority == 'Important-Urgent' %}badge-danger{% elif ticket.priority == 'Important-NotUrgent' %}badge-warning{% else %}badge-success{% endif %} p-2" onclick="openEditWindow('{{ url_for('edit_ticket', id=ticket.id) }}')" style="cursor: pointer; border-radius: 50%;">
                                 <i class="fas {% if ticket.status == 'Closed' or ticket.status == 'Completed' %}fa-check{% else %}fa-info-circle{% endif %}"></i>
@@ -121,18 +139,61 @@
         window.open(url, 'editTicketWindow', 'width=800,height=600,resizable=yes,scrollbars=yes,status=yes');
     }
 
-    // Filter board by assigned technician
-    function filterByTech() {
+    // Apply combined filters and save selection to localStorage
+    function applyFilters() {
         const selectedTech = document.getElementById("techFilterSelect").value;
+        const selectedStatus = document.getElementById("statusFilterSelect").value;
+
+        // Persist selections across page reloads
+        localStorage.setItem("dashboard_tech_filter", selectedTech);
+        localStorage.setItem("dashboard_status_filter", selectedStatus);
+
         document.querySelectorAll(".ticket-item").forEach(item => {
             const itemTech = item.getAttribute("data-tech");
-            if (selectedTech === "all" || itemTech === selectedTech) {
+            const itemStatus = item.getAttribute("data-status");
+
+            // Check tech match
+            const techMatch = (selectedTech === "all") || (itemTech === selectedTech);
+
+            // Check status match
+            let statusMatch = false;
+            if (selectedStatus === "all") {
+                statusMatch = true;
+            } else if (selectedStatus === "hide_closed") {
+                statusMatch = (itemStatus !== "closed" && itemStatus !== "completed");
+            } else {
+                statusMatch = (itemStatus === selectedStatus);
+            }
+
+            if (techMatch && statusMatch) {
                 item.style.display = "";
             } else {
                 item.style.display = "none";
             }
         });
     }
+
+    // Restore saved filters on page load
+    document.addEventListener("DOMContentLoaded", function () {
+        const savedTech = localStorage.getItem("dashboard_tech_filter");
+        const savedStatus = localStorage.getItem("dashboard_status_filter");
+
+        if (savedTech) {
+            const techSelect = document.getElementById("techFilterSelect");
+            if ([...techSelect.options].some(opt => opt.value === savedTech)) {
+                techSelect.value = savedTech;
+            }
+        }
+
+        if (savedStatus) {
+            const statusSelect = document.getElementById("statusFilterSelect");
+            if ([...statusSelect.options].some(opt => opt.value === savedStatus)) {
+                statusSelect.value = savedStatus;
+            }
+        }
+
+        applyFilters();
+    });
 
     // Keyboard Shortcuts: Alt+R (Random Task), Alt+N (Random Number)
     document.addEventListener('keydown', function (event) {
