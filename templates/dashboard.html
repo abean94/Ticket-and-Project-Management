@@ -18,7 +18,7 @@
     <div class="card-header bg-white">
         <div class="d-flex flex-wrap align-items-center gap-2" style="gap: 10px;">
             <!-- Search Box -->
-            <div class="input-group input-group-sm" style="max-width: 280px;">
+            <div class="input-group input-group-sm" style="max-width: 250px;">
                 <input type="text" id="ticketSearchInput" placeholder="Search ticket #, name, or subject" class="form-control">
                 <div class="input-group-append">
                     <button class="btn btn-primary" onclick="searchTicket()">
@@ -28,7 +28,7 @@
             </div>
 
             <!-- Technician Filter Dropdown -->
-            <div class="input-group input-group-sm" style="max-width: 220px;">
+            <div class="input-group input-group-sm" style="max-width: 200px;">
                 <div class="input-group-prepend">
                     <label class="input-group-text bg-light" for="techFilterSelect"><i class="fas fa-user-tag mr-1"></i> Tech</label>
                 </div>
@@ -46,7 +46,7 @@
             </div>
 
             <!-- Status Filter Dropdown -->
-            <div class="input-group input-group-sm" style="max-width: 210px;">
+            <div class="input-group input-group-sm" style="max-width: 190px;">
                 <div class="input-group-prepend">
                     <label class="input-group-text bg-light" for="statusFilterSelect"><i class="fas fa-filter mr-1"></i> Status</label>
                 </div>
@@ -59,6 +59,29 @@
                     <option value="on hold">On Hold</option>
                     <option value="closed">Closed</option>
                 </select>
+            </div>
+
+            <!-- Due Date Filter Dropdown -->
+            <div class="input-group input-group-sm" style="max-width: 210px;">
+                <div class="input-group-prepend">
+                    <label class="input-group-text bg-light" for="dateFilterSelect"><i class="fas fa-calendar-alt mr-1"></i> Due</label>
+                </div>
+                <select id="dateFilterSelect" class="custom-select custom-select-sm" onchange="toggleCustomDateInputs(); applyFilters();">
+                    <option value="all" selected>All Dates</option>
+                    <option value="today">Due Today</option>
+                    <option value="tomorrow">Due Tomorrow</option>
+                    <option value="next_7_days">Next 7 Days</option>
+                    <option value="overdue">Past Due</option>
+                    <option value="custom">Custom Range</option>
+                    <option value="none">No Due Date</option>
+                </select>
+            </div>
+
+            <!-- Custom Date Inputs (Revealed when "Custom Range" is selected) -->
+            <div id="customDateContainer" class="d-none align-items-center" style="gap: 5px;">
+                <input type="date" id="customStartDate" class="form-control form-control-sm" onchange="applyFilters()" style="width: 135px;">
+                <span class="small text-muted">to</span>
+                <input type="date" id="customEndDate" class="form-control form-control-sm" onchange="applyFilters()" style="width: 135px;">
             </div>
         </div>
     </div>
@@ -80,7 +103,8 @@
                     {% for ticket in tickets %}
                     <tr class="ticket-item" 
                         data-tech="{{ ticket.assigned_tech.username if ticket.assigned_tech else 'unassigned' }}"
-                        data-status="{{ ticket.status | lower }}">
+                        data-status="{{ ticket.status | lower }}"
+                        data-duedate="{{ ticket.due_date | ymd }}">
                         <td class="text-center align-middle">
                             <span class="badge {% if ticket.priority == 'Important-Urgent' %}badge-danger{% elif ticket.priority == 'Important-NotUrgent' %}badge-warning{% else %}badge-success{% endif %} p-2" onclick="openEditWindow('{{ url_for('edit_ticket', id=ticket.id) }}')" style="cursor: pointer; border-radius: 50%;">
                                 <i class="fas {% if ticket.status == 'Closed' or ticket.status == 'Completed' %}fa-check{% else %}fa-info-circle{% endif %}"></i>
@@ -103,6 +127,9 @@
                                         <span class="badge badge-secondary">Unassigned</span>
                                     {% endif %}
                                 </span>
+                                {% if ticket.due_date %}
+                                | <span><strong>Due:</strong> {{ ticket.due_date | ymd }}</span>
+                                {% endif %}
                             </div>
                         </td>
                         <td class="align-middle text-center ticket-time">
@@ -139,23 +166,63 @@
         window.open(url, 'editTicketWindow', 'width=800,height=600,resizable=yes,scrollbars=yes,status=yes');
     }
 
-    // Apply combined filters and save selection to localStorage
+    function parseLocalDate(dateStr) {
+        if (!dateStr) return null;
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    }
+
+    function toggleCustomDateInputs() {
+        const selectedDate = document.getElementById("dateFilterSelect").value;
+        const container = document.getElementById("customDateContainer");
+        if (selectedDate === "custom") {
+            container.classList.remove("d-none");
+            container.classList.add("d-flex");
+        } else {
+            container.classList.remove("d-flex");
+            container.classList.add("d-none");
+        }
+    }
+
+    // Apply combined filters and save selections to localStorage
     function applyFilters() {
         const selectedTech = document.getElementById("techFilterSelect").value;
         const selectedStatus = document.getElementById("statusFilterSelect").value;
+        const selectedDate = document.getElementById("dateFilterSelect").value;
+
+        const customStart = document.getElementById("customStartDate").value;
+        const customEnd = document.getElementById("customEndDate").value;
 
         // Persist selections across page reloads
         localStorage.setItem("dashboard_tech_filter", selectedTech);
         localStorage.setItem("dashboard_status_filter", selectedStatus);
+        localStorage.setItem("dashboard_date_filter", selectedDate);
+        localStorage.setItem("dashboard_custom_start", customStart);
+        localStorage.setItem("dashboard_custom_end", customEnd);
+
+        // Date calculations for comparison
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const nextWeek = new Date(today);
+        nextWeek.setDate(nextWeek.getDate() + 7);
+
+        const startDateObj = parseLocalDate(customStart);
+        const endDateObj = parseLocalDate(customEnd);
 
         document.querySelectorAll(".ticket-item").forEach(item => {
             const itemTech = item.getAttribute("data-tech");
             const itemStatus = item.getAttribute("data-status");
+            const itemDueDateStr = item.getAttribute("data-duedate");
+            const itemDueDate = parseLocalDate(itemDueDateStr);
 
-            // Check tech match
+            // Tech match
             const techMatch = (selectedTech === "all") || (itemTech === selectedTech);
 
-            // Check status match
+            // Status match
             let statusMatch = false;
             if (selectedStatus === "all") {
                 statusMatch = true;
@@ -165,7 +232,37 @@
                 statusMatch = (itemStatus === selectedStatus);
             }
 
-            if (techMatch && statusMatch) {
+            // Due Date match
+            let dateMatch = false;
+            if (selectedDate === "all") {
+                dateMatch = true;
+            } else if (selectedDate === "today") {
+                dateMatch = (itemDueDate && itemDueDate.getTime() === today.getTime());
+            } else if (selectedDate === "tomorrow") {
+                dateMatch = (itemDueDate && itemDueDate.getTime() === tomorrow.getTime());
+            } else if (selectedDate === "next_7_days") {
+                dateMatch = (itemDueDate && itemDueDate.getTime() >= today.getTime() && itemDueDate.getTime() <= nextWeek.getTime());
+            } else if (selectedDate === "overdue") {
+                dateMatch = (itemDueDate && itemDueDate.getTime() < today.getTime());
+            } else if (selectedDate === "custom") {
+                if (itemDueDate) {
+                    if (startDateObj && endDateObj) {
+                        dateMatch = (itemDueDate.getTime() >= startDateObj.getTime() && itemDueDate.getTime() <= endDateObj.getTime());
+                    } else if (startDateObj) {
+                        dateMatch = (itemDueDate.getTime() >= startDateObj.getTime());
+                    } else if (endDateObj) {
+                        dateMatch = (itemDueDate.getTime() <= endDateObj.getTime());
+                    } else {
+                        dateMatch = true; // Show all if custom is picked but no dates entered yet
+                    }
+                } else {
+                    dateMatch = false;
+                }
+            } else if (selectedDate === "none") {
+                dateMatch = (!itemDueDate);
+            }
+
+            if (techMatch && statusMatch && dateMatch) {
                 item.style.display = "";
             } else {
                 item.style.display = "none";
@@ -177,6 +274,12 @@
     document.addEventListener("DOMContentLoaded", function () {
         const savedTech = localStorage.getItem("dashboard_tech_filter");
         const savedStatus = localStorage.getItem("dashboard_status_filter");
+        const savedDate = localStorage.getItem("dashboard_date_filter");
+        const savedStart = localStorage.getItem("dashboard_custom_start");
+        const savedEnd = localStorage.getItem("dashboard_custom_end");
+
+        if (savedStart) document.getElementById("customStartDate").value = savedStart;
+        if (savedEnd) document.getElementById("customEndDate").value = savedEnd;
 
         if (savedTech) {
             const techSelect = document.getElementById("techFilterSelect");
@@ -192,6 +295,14 @@
             }
         }
 
+        if (savedDate) {
+            const dateSelect = document.getElementById("dateFilterSelect");
+            if ([...dateSelect.options].some(opt => opt.value === savedDate)) {
+                dateSelect.value = savedDate;
+            }
+        }
+
+        toggleCustomDateInputs();
         applyFilters();
     });
 
