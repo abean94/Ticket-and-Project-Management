@@ -361,7 +361,8 @@ def dashboard():
                 ticket.age = "N/A"
 
     session.pop("start_time_utc", None)
-    return render_template("dashboard.html", tickets=tickets)
+    technicians = User.query.filter(User.role.in_(['admin', 'technician'])).all()
+    return render_template("dashboard.html", tickets=tickets, technicians=technicians)
 
 
 @app.route("/download_tickets_excel")
@@ -2591,6 +2592,33 @@ def inventory_dashboard():
         asset_form=asset_form,
     )
 
+
+@app.route("/batch_assign_tech", methods=["POST"])
+@login_required
+def batch_assign_tech():
+    ticket_ids = request.form.getlist("ticket_ids")
+    tech_id = request.form.get("assigned_tech_id", type=int)
+
+    if not ticket_ids:
+        flash("No tickets selected for assignment.", "warning")
+        return redirect(request.referrer or url_for("dashboard"))
+
+    new_tech_id = tech_id if tech_id != 0 else None
+    tickets = Ticket.query.filter(Ticket.id.in_(ticket_ids)).all()
+
+    assigned_count = 0
+    for ticket in tickets:
+        old_tech_id = ticket.assigned_tech_id
+        ticket.assigned_tech_id = new_tech_id
+        assigned_count += 1
+
+        # Send notification email if tech changed
+        if new_tech_id and new_tech_id != old_tech_id:
+            send_assignment_email(ticket)
+
+    db.session.commit()
+    flash(f"Successfully updated assignment for {assigned_count} ticket(s).", "success")
+    return redirect(request.referrer or url_for("dashboard"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

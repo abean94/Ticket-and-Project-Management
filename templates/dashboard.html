@@ -3,165 +3,206 @@
 {% block title %}Ticket Board | {{ BRAND_NAME or "Helpdesk" }}{% endblock %}
 
 {% block content %}
-<div class="row mb-3 align-items-center">
-    <div class="col-md-6">
-        <h3 class="m-0 font-weight-bold text-dark">Ticket Board</h3>
-    </div>
-    <div class="col-md-6 text-md-right mt-2 mt-md-0">
-        <a href="{% if request.endpoint == 'dashboard_today' %}{{ url_for('download_tickets_excel_today') }}{% else %}{{ url_for('download_tickets_excel') }}{% endif %}" class="btn btn-secondary btn-sm">
-            <i class="fas fa-file-excel mr-1"></i> Download Open Tickets
-        </a>
-    </div>
-</div>
-
-<div class="card card-outline card-primary shadow-sm">
-    <div class="card-header bg-white">
-        <div class="d-flex flex-wrap align-items-center gap-2" style="gap: 10px;">
-            <!-- Search Box -->
-            <div class="input-group input-group-sm" style="max-width: 250px;">
-                <input type="text" id="ticketSearchInput" placeholder="Search ticket #, name, or subject" class="form-control">
-                <div class="input-group-append">
-                    <button class="btn btn-primary" onclick="searchTicket()">
-                        <i class="fas fa-search"></i> Find
-                    </button>
-                </div>
-            </div>
-
-            <!-- Technician Filter Dropdown -->
-            <div class="input-group input-group-sm" style="max-width: 200px;">
-                <div class="input-group-prepend">
-                    <label class="input-group-text bg-light" for="techFilterSelect"><i class="fas fa-user-tag mr-1"></i> Tech</label>
-                </div>
-                <select id="techFilterSelect" class="custom-select custom-select-sm" onchange="applyFilters()">
-                    <option value="all" selected>All Technicians</option>
-                    <option value="unassigned">Unassigned</option>
-                    {% set tech_list = [] %}
-                    {% for ticket in tickets %}
-                        {% if ticket.assigned_tech and ticket.assigned_tech.username not in tech_list %}
-                            {% set _ = tech_list.append(ticket.assigned_tech.username) %}
-                            <option value="{{ ticket.assigned_tech.username }}">{{ ticket.assigned_tech.username }}</option>
-                        {% endif %}
-                    {% endfor %}
-                </select>
-            </div>
-
-            <!-- Status Filter Dropdown -->
-            <div class="input-group input-group-sm" style="max-width: 190px;">
-                <div class="input-group-prepend">
-                    <label class="input-group-text bg-light" for="statusFilterSelect"><i class="fas fa-filter mr-1"></i> Status</label>
-                </div>
-                <select id="statusFilterSelect" class="custom-select custom-select-sm" onchange="applyFilters()">
-                    <option value="all">All Statuses</option>
-                    <option value="hide_closed">Hide Closed</option>
-                    <option value="open">Open</option>
-                    <option value="in progress">In Progress</option>
-                    <option value="touched">Touched</option>
-                    <option value="on hold">On Hold</option>
-                    <option value="closed">Closed</option>
-                </select>
-            </div>
-
-            <!-- Due Date Filter Dropdown -->
-            <div class="input-group input-group-sm" style="max-width: 210px;">
-                <div class="input-group-prepend">
-                    <label class="input-group-text bg-light" for="dateFilterSelect"><i class="fas fa-calendar-alt mr-1"></i> Due</label>
-                </div>
-                <select id="dateFilterSelect" class="custom-select custom-select-sm" onchange="toggleCustomDateInputs(); applyFilters();">
-                    <option value="all" selected>All Dates</option>
-                    <option value="today">Due Today</option>
-                    <option value="tomorrow">Due Tomorrow</option>
-                    <option value="next_7_days">Next 7 Days</option>
-                    <option value="overdue">Past Due</option>
-                    <option value="custom">Custom Range</option>
-                    <option value="none">No Due Date</option>
-                </select>
-            </div>
-
-            <!-- Custom Date Inputs (Revealed when "Custom Range" is selected) -->
-            <div id="customDateContainer" class="d-none align-items-center" style="gap: 5px;">
-                <input type="date" id="customStartDate" class="form-control form-control-sm" onchange="applyFilters()" style="width: 135px;">
-                <span class="small text-muted">to</span>
-                <input type="date" id="customEndDate" class="form-control form-control-sm" onchange="applyFilters()" style="width: 135px;">
-            </div>
+<form id="batchAssignForm" method="POST" action="{{ url_for('batch_assign_tech') }}">
+    <div class="row mb-3 align-items-center">
+        <div class="col-md-6">
+            <h3 class="m-0 font-weight-bold text-dark">Ticket Board</h3>
+        </div>
+        <div class="col-md-6 text-md-right mt-2 mt-md-0">
+            <a href="{% if request.endpoint == 'dashboard_today' %}{{ url_for('download_tickets_excel_today') }}{% else %}{{ url_for('download_tickets_excel') }}{% endif %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-file-excel mr-1"></i> Download Open Tickets
+            </a>
         </div>
     </div>
-    
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
-                    <tr>
-                        <th style="width: 50px;" class="text-center">Priority</th>
-                        <th style="width: 150px;">Client</th>
-                        <th>Subject & Details</th>
-                        <th style="width: 120px;" class="text-center">Age</th>
-                        <th style="width: 160px;" class="text-center">Context</th>
-                        <th style="width: 90px;" class="text-center">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ticket in tickets %}
-                    <tr class="ticket-item" 
-                        data-tech="{{ ticket.assigned_tech.username if ticket.assigned_tech else 'unassigned' }}"
-                        data-status="{{ ticket.status | lower }}"
-                        data-duedate="{{ ticket.due_date | ymd }}">
-                        <td class="text-center align-middle">
-                            <span class="badge {% if ticket.priority == 'Important-Urgent' %}badge-danger{% elif ticket.priority == 'Important-NotUrgent' %}badge-warning{% else %}badge-success{% endif %} p-2" onclick="openEditWindow('{{ url_for('edit_ticket', id=ticket.id) }}')" style="cursor: pointer; border-radius: 50%;">
-                                <i class="fas {% if ticket.status == 'Closed' or ticket.status == 'Completed' %}fa-check{% else %}fa-info-circle{% endif %}"></i>
-                            </span>
-                        </td>
-                        <td class="align-middle ticket-user">
-                            <strong>{{ ticket.client.first_name }} {{ ticket.client.last_name }}</strong>
-                        </td>
-                        <td class="align-middle ticket-details">
-                            <div class="ticket-subject mb-1">
-                                <strong>#{{ ticket.id }} - {{ ticket.subject }}</strong>
-                            </div>
-                            <div class="ticket-info text-muted small">
-                                <span><strong>Status:</strong> {{ ticket.status }}</span> | 
-                                <span><strong>Priority:</strong> {{ ticket.priority }}</span> |
-                                <span><strong>Tech:</strong> 
-                                    {% if ticket.assigned_tech %}
-                                        <span class="badge badge-primary">{{ ticket.assigned_tech.username }}</span>
-                                    {% else %}
-                                        <span class="badge badge-secondary">Unassigned</span>
-                                    {% endif %}
-                                </span>
-                                {% if ticket.due_date %}
-                                | <span><strong>Due:</strong> {{ ticket.due_date | ymd }}</span>
+
+    <div class="card card-outline card-primary shadow-sm">
+        <div class="card-header bg-white">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2" style="gap: 10px;">
+                <!-- Filters Section -->
+                <div class="d-flex flex-wrap align-items-center gap-2" style="gap: 10px;">
+                    <!-- Search Box -->
+                    <div class="input-group input-group-sm" style="max-width: 220px;">
+                        <input type="text" id="ticketSearchInput" placeholder="Search #, name, subject" class="form-control">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="button" onclick="searchTicket()">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tech Filter -->
+                    <div class="input-group input-group-sm" style="max-width: 180px;">
+                        <div class="input-group-prepend">
+                            <label class="input-group-text bg-light" for="techFilterSelect"><i class="fas fa-user-tag mr-1"></i> Tech</label>
+                        </div>
+                        <select id="techFilterSelect" class="custom-select custom-select-sm" onchange="applyFilters()">
+                            <option value="all" selected>All Technicians</option>
+                            <option value="unassigned">Unassigned</option>
+                            {% set tech_list = [] %}
+                            {% for ticket in tickets %}
+                                {% if ticket.assigned_tech and ticket.assigned_tech.username not in tech_list %}
+                                    {% set _ = tech_list.append(ticket.assigned_tech.username) %}
+                                    <option value="{{ ticket.assigned_tech.username }}">{{ ticket.assigned_tech.username }}</option>
                                 {% endif %}
-                            </div>
-                        </td>
-                        <td class="align-middle text-center ticket-time">
-                            <i class="far fa-clock text-muted mr-1"></i>
-                            <span>{{ ticket.age }}</span>
-                        </td>
-                        <td class="align-middle text-center ticket-type small text-uppercase text-muted">
-                            {% if ticket.project %}
-                                <div><strong>Proj:</strong> {{ ticket.project.name }}</div>
-                                <div><strong>Phase:</strong> {{ ticket.phase.name }}</div>
-                            {% else %}
-                                <span>General</span>
-                            {% endif %}
-                        </td>
-                        <td class="align-middle text-center btn-view">
-                            <a href="{{ url_for('view_ticket', id=ticket.id) }}" 
-                               class="btn btn-info btn-sm" 
-                               onclick="window.open(this.href, 'viewTicketWindow', 'width=1751,height=800,resizable=no,scrollbars=yes,status=yes'); return false;">
-                                <i class="fas fa-eye mr-1"></i> View
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="input-group input-group-sm" style="max-width: 170px;">
+                        <div class="input-group-prepend">
+                            <label class="input-group-text bg-light" for="statusFilterSelect"><i class="fas fa-filter mr-1"></i> Status</label>
+                        </div>
+                        <select id="statusFilterSelect" class="custom-select custom-select-sm" onchange="applyFilters()">
+                            <option value="all">All Statuses</option>
+                            <option value="hide_closed">Hide Closed</option>
+                            <option value="open">Open</option>
+                            <option value="in progress">In Progress</option>
+                            <option value="touched">Touched</option>
+                            <option value="on hold">On Hold</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+
+                    <!-- Due Date Filter -->
+                    <div class="input-group input-group-sm" style="max-width: 180px;">
+                        <div class="input-group-prepend">
+                            <label class="input-group-text bg-light" for="dateFilterSelect"><i class="fas fa-calendar-alt mr-1"></i> Due</label>
+                        </div>
+                        <select id="dateFilterSelect" class="custom-select custom-select-sm" onchange="toggleCustomDateInputs(); applyFilters();">
+                            <option value="all" selected>All Dates</option>
+                            <option value="today">Due Today</option>
+                            <option value="tomorrow">Due Tomorrow</option>
+                            <option value="next_7_days">Next 7 Days</option>
+                            <option value="overdue">Past Due</option>
+                            <option value="custom">Custom Range</option>
+                            <option value="none">No Due Date</option>
+                        </select>
+                    </div>
+
+                    <!-- Custom Date Inputs -->
+                    <div id="customDateContainer" class="d-none align-items-center" style="gap: 5px;">
+                        <input type="date" id="customStartDate" class="form-control form-control-sm" onchange="applyFilters()" style="width: 130px;">
+                        <span class="small text-muted">to</span>
+                        <input type="date" id="customEndDate" class="form-control form-control-sm" onchange="applyFilters()" style="width: 130px;">
+                    </div>
+                </div>
+
+                <!-- Mass Assign Control Bar -->
+                <div class="input-group input-group-sm ml-auto" style="max-width: 310px;">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text bg-warning text-dark font-weight-bold"><i class="fas fa-users-cog mr-1"></i> Assign To</span>
+                    </div>
+                    <select name="assigned_tech_id" class="custom-select custom-select-sm" required>
+                        <option value="0">Unassigned</option>
+                        {% if technicians %}
+                            {% for tech in technicians %}
+                                <option value="{{ tech.id }}">{{ tech.username }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                    <div class="input-group-append">
+                        <button type="submit" class="btn btn-warning btn-sm font-weight-bold">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th style="width: 40px;" class="text-center">
+                                <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)">
+                            </th>
+                            <th style="width: 50px;" class="text-center">Priority</th>
+                            <th style="width: 150px;">Client</th>
+                            <th>Subject & Details</th>
+                            <th style="width: 120px;" class="text-center">Age</th>
+                            <th style="width: 160px;" class="text-center">Context</th>
+                            <th style="width: 90px;" class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr class="ticket-item" 
+                            data-tech="{{ ticket.assigned_tech.username if ticket.assigned_tech else 'unassigned' }}"
+                            data-status="{{ ticket.status | lower }}"
+                            data-duedate="{{ ticket.due_date | ymd }}">
+                            <td class="text-center align-middle">
+                                <input type="checkbox" name="ticket_ids" value="{{ ticket.id }}" class="ticket-select-checkbox">
+                            </td>
+                            <td class="text-center align-middle">
+                                <span class="badge {% if ticket.priority == 'Important-Urgent' %}badge-danger{% elif ticket.priority == 'Important-NotUrgent' %}badge-warning{% else %}badge-success{% endif %} p-2" onclick="openEditWindow('{{ url_for('edit_ticket', id=ticket.id) }}')" style="cursor: pointer; border-radius: 50%;">
+                                    <i class="fas {% if ticket.status == 'Closed' or ticket.status == 'Completed' %}fa-check{% else %}fa-info-circle{% endif %}"></i>
+                                </span>
+                            </td>
+                            <td class="align-middle ticket-user">
+                                <strong>{{ ticket.client.first_name }} {{ ticket.client.last_name }}</strong>
+                            </td>
+                            <td class="align-middle ticket-details">
+                                <div class="ticket-subject mb-1">
+                                    <strong>#{{ ticket.id }} - {{ ticket.subject }}</strong>
+                                </div>
+                                <div class="ticket-info text-muted small">
+                                    <span><strong>Status:</strong> {{ ticket.status }}</span> | 
+                                    <span><strong>Priority:</strong> {{ ticket.priority }}</span> |
+                                    <span><strong>Tech:</strong> 
+                                        {% if ticket.assigned_tech %}
+                                            <span class="badge badge-primary">{{ ticket.assigned_tech.username }}</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Unassigned</span>
+                                        {% endif %}
+                                    </span>
+                                    {% if ticket.due_date %}
+                                    | <span><strong>Due:</strong> {{ ticket.due_date | ymd }}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="align-middle text-center ticket-time">
+                                <i class="far fa-clock text-muted mr-1"></i>
+                                <span>{{ ticket.age }}</span>
+                            </td>
+                            <td class="align-middle text-center ticket-type small text-uppercase text-muted">
+                                {% if ticket.project %}
+                                    <div><strong>Proj:</strong> {{ ticket.project.name }}</div>
+                                    <div><strong>Phase:</strong> {{ ticket.phase.name }}</div>
+                                {% else %}
+                                    <span>General</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle text-center btn-view">
+                                <a href="{{ url_for('view_ticket', id=ticket.id) }}" 
+                                   class="btn btn-info btn-sm" 
+                                   onclick="window.open(this.href, 'viewTicketWindow', 'width=1751,height=800,resizable=no,scrollbars=yes,status=yes'); return false;">
+                                    <i class="fas fa-eye mr-1"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
+</form>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    function toggleSelectAll(master) {
+        // Only select currently visible ticket checkboxes
+        document.querySelectorAll('.ticket-item').forEach(row => {
+            if (row.style.display !== 'none') {
+                const cb = row.querySelector('.ticket-select-checkbox');
+                if (cb) cb.checked = master.checked;
+            }
+        });
+    }
+
     function openEditWindow(url) {
         window.open(url, 'editTicketWindow', 'width=800,height=600,resizable=yes,scrollbars=yes,status=yes');
     }
@@ -184,7 +225,6 @@
         }
     }
 
-    // Apply combined filters and save selections to localStorage
     function applyFilters() {
         const selectedTech = document.getElementById("techFilterSelect").value;
         const selectedStatus = document.getElementById("statusFilterSelect").value;
@@ -193,14 +233,12 @@
         const customStart = document.getElementById("customStartDate").value;
         const customEnd = document.getElementById("customEndDate").value;
 
-        // Persist selections across page reloads
         localStorage.setItem("dashboard_tech_filter", selectedTech);
         localStorage.setItem("dashboard_status_filter", selectedStatus);
         localStorage.setItem("dashboard_date_filter", selectedDate);
         localStorage.setItem("dashboard_custom_start", customStart);
         localStorage.setItem("dashboard_custom_end", customEnd);
 
-        // Date calculations for comparison
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         
@@ -219,10 +257,8 @@
             const itemDueDateStr = item.getAttribute("data-duedate");
             const itemDueDate = parseLocalDate(itemDueDateStr);
 
-            // Tech match
             const techMatch = (selectedTech === "all") || (itemTech === selectedTech);
 
-            // Status match
             let statusMatch = false;
             if (selectedStatus === "all") {
                 statusMatch = true;
@@ -232,7 +268,6 @@
                 statusMatch = (itemStatus === selectedStatus);
             }
 
-            // Due Date match
             let dateMatch = false;
             if (selectedDate === "all") {
                 dateMatch = true;
@@ -253,7 +288,7 @@
                     } else if (endDateObj) {
                         dateMatch = (itemDueDate.getTime() <= endDateObj.getTime());
                     } else {
-                        dateMatch = true; // Show all if custom is picked but no dates entered yet
+                        dateMatch = true;
                     }
                 } else {
                     dateMatch = false;
@@ -270,7 +305,6 @@
         });
     }
 
-    // Restore saved filters on page load
     document.addEventListener("DOMContentLoaded", function () {
         const savedTech = localStorage.getItem("dashboard_tech_filter");
         const savedStatus = localStorage.getItem("dashboard_status_filter");
@@ -306,19 +340,6 @@
         applyFilters();
     });
 
-    // Keyboard Shortcuts: Alt+R (Random Task), Alt+N (Random Number)
-    document.addEventListener('keydown', function (event) {
-        if (event.altKey && event.key === 'r') {
-            window.open("{{ url_for('random_task') }}", 'randomTaskWindow', 'width=800,height=600,resizable=yes,scrollbars=yes,status=yes');
-            event.preventDefault();
-        }
-        if (event.altKey && event.key === 'n') {
-            window.open("{{ url_for('random_number') }}", 'randomTaskWindow', 'width=800,height=600,resizable=yes,scrollbars=yes,status=yes');
-            event.preventDefault();
-        }
-    });
-
-    // In-page quick search
     function searchTicket() {
         const input = document.getElementById("ticketSearchInput").value.toLowerCase().trim();
         if (!input) {
@@ -349,6 +370,7 @@
     document.addEventListener("keydown", function (event) {
         if (event.key === "Enter" && document.activeElement.id === "ticketSearchInput") {
             searchTicket();
+            event.preventDefault();
         }
     });
 </script>
