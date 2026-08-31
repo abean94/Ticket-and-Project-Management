@@ -9,9 +9,9 @@
             <h3 class="m-0 font-weight-bold text-dark">Ticket Board</h3>
         </div>
         <div class="col-md-6 text-md-right mt-2 mt-md-0">
-            <a href="{% if request.endpoint == 'dashboard_today' %}{{ url_for('download_tickets_excel_today') }}{% else %}{{ url_for('download_tickets_excel') }}{% endif %}" class="btn btn-secondary btn-sm">
-                <i class="fas fa-file-excel mr-1"></i> Download Open Tickets
-            </a>
+                    <a href="{{ url_for('download_tickets_excel') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-file-excel mr-1"></i> Download Open Tickets
+                    </a>
         </div>
     </div>
 

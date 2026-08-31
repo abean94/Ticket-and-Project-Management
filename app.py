@@ -300,7 +300,7 @@ def logout():
     flash("You have been logged out.", "success")
     return redirect(url_for("login"))
 
-
+@app.route("/")
 @app.route("/dashboard")
 @login_required
 def dashboard():
@@ -361,7 +361,10 @@ def dashboard():
                 ticket.age = "N/A"
 
     session.pop("start_time_utc", None)
+    # Add this line to fetch tech and admin users
     technicians = User.query.filter(User.role.in_(['admin', 'technician'])).all()
+
+    session.pop("start_time_utc", None)
     return render_template("dashboard.html", tickets=tickets, technicians=technicians)
 
 
@@ -427,142 +430,6 @@ def download_tickets_excel():
         download_name="tickets.xlsx",
     )
 
-
-@app.route("/")
-@login_required
-def dashboard_today():
-    # ✅ Fix: Correct MySQL date filter (Includes today and tomorrow)
-    tickets = (
-        Ticket.query.filter(
-            Ticket.due_date.between(
-                func.date(func.now()),
-                func.timestampadd(
-                    text("SECOND"), 86399, func.date(func.now())
-                ),  # ✅ 11:59:59 PM today
-            )
-        )
-        .order_by(
-            db.case(
-                (Ticket.status.in_(["Open", "In Progress"]), 1),
-                (Ticket.status == "Touched", 2),
-                (Ticket.status == "On Hold", 3),
-                (Ticket.status == "Closed", 4),
-            ).asc(),
-            db.case(
-                (Ticket.priority == "Important-Urgent", 1),
-                (Ticket.priority == "Important-NotUrgent", 2),
-                (Ticket.priority == "NotImportant-Urgent", 3),
-                (Ticket.priority == "NotImportant-NotUrgent", 4),
-            ).asc(),
-        )
-        .all()
-    )
-
-    eastern = timezone("US/Eastern")
-    current_time = datetime.now(UTC)
-
-    # ✅ Fix: Handle NULL/Invalid timestamps
-    for ticket in tickets:
-        if ticket.created_at:
-            try:
-                # ✅ Convert string timestamps safely
-                if isinstance(ticket.created_at, str):
-                    if ticket.created_at not in [None, "0000-00-00 00:00:00"]:
-                        ticket.created_at = datetime.strptime(
-                            ticket.created_at, "%Y-%m-%d %H:%M:%S"
-                        )
-                    else:
-                        ticket.created_at = None  # Handle invalid timestamps
-
-                # ✅ Ensure proper timezone conversion
-                if ticket.created_at:
-                    ticket.created_at = ticket.created_at.replace(
-                        tzinfo=UTC
-                    ).astimezone(eastern)
-
-                    # ✅ Calculate ticket age
-                    age = current_time - ticket.created_at.astimezone(UTC)
-                    days = age.days
-                    hours = age.seconds // 3600  # Get hours from seconds
-                    ticket.age = f"{days}d:{hours}h"
-                else:
-                    ticket.age = "N/A"  # Handle cases with missing timestamps
-
-            except ValueError:
-                ticket.created_at = None  # Handle any parsing errors
-                ticket.age = "N/A"
-
-    session.pop("start_time_utc", None)
-    return render_template("dashboard.html", tickets=tickets)
-
-
-@app.route("/download_tickets_excel_today")
-@login_required
-def download_tickets_excel_today():
-    # Retrieve all the tickets from the database (replace with your actual query)
-    # Create a list of dictionaries to store ticket data
-    tickets = (
-        Ticket.query.filter(
-            Ticket.due_date.between(
-                func.date(func.now()),
-                func.timestampadd(
-                    text("SECOND"), 86399, func.date(func.now())
-                ),  # ✅ 11:59:59 PM today
-            )
-        )
-        .order_by(
-            db.case(
-                (Ticket.status in ["Open", "In Progress"], 1),
-                (Ticket.status == "Touched", 2),
-                (Ticket.status == "On Hold", 3),
-                (Ticket.status == "Closed", 4),
-            ).asc(),
-            db.case(
-                (Ticket.priority == "Important-Urgent", 1),
-                (Ticket.priority == "Important-NotUrgent", 2),
-                (Ticket.priority == "NotImportant-Urgent", 3),
-                (Ticket.priority == "NotImportant-NotUrgent", 4),
-            ).asc(),
-        )
-        .all()
-    )
-    ticket_data = []
-    for ticket in tickets:
-        ticket_data.append(
-            {
-                "Ticket ID": ticket.id,
-                "Subject": ticket.subject,
-                "Status": ticket.status,
-                "Priority": ticket.priority,
-                "Due Date": ticket.due_date.strftime("%Y-%m-%d")
-                if ticket.due_date
-                else None,
-                "Estimated Hours": ticket.estimated_hours,
-                "Project": ticket.project.name if ticket.project else "No Project",
-                "Phase": ticket.phase.name if ticket.phase else "No Phase",
-            }
-        )
-
-    # Create a DataFrame from the ticket data
-    df = pd.DataFrame(ticket_data)
-
-    # Create an in-memory output file
-    output = BytesIO()
-
-    # Write the DataFrame to an Excel file
-    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-        df.to_excel(writer, index=False, sheet_name="Tickets")
-
-    # Set the output file's position to the beginning
-    output.seek(0)
-
-    # Send the file as an attachment to be downloaded by the user
-    return send_file(
-        output,
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        as_attachment=True,
-        download_name="tickets.xlsx",
-    )
 
 
 @app.route("/project_or_regular")
