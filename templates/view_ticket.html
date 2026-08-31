@@ -1,458 +1,292 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Ticket</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='markdown-editor.css') }}" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .container {
-            background-color: #ffffff;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-top: 40px;
-            position: relative;
-        }
-        h2, h3 {
-            border-bottom: 2px solid #6c757d;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        .form-label {
-            font-weight: bold;
-        }
-        .sticky-buttons {
-            position: fixed;
-            top: 50%;
-            right: 2%;
-            transform: translateY(-50%);
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+{% extends "base.html" %}
 
-        }
-        a, {
-            padding: 5px;
-            margin: 3px;
-            width: 100px; /* Adjust the width as needed */
-            height: 40px; /* Adjust the height as needed */
-            display: inline-block; /* Ensures buttons keep their block-level dimensions */
-            text-align: center; /* Centers the text */
-            line-height: 40px; /* Centers the text vertically */
-            margin: 5px; /* Adds spacing between buttons */
-        }
+{% block title %}Ticket #{{ ticket.id }} - {{ ticket.subject }} | {{ BRAND_NAME or "Helpdesk" }}{% endblock %}
 
-        /* Removed fixed width/height so Bootstrap buttons can size properly */
-        .btn {
-            min-width: 100px; /* Keeps small buttons looking uniform, but lets larger ones stretch */
-            margin: 5px;
-        }
+{% block extra_css %}
+<link href="{{ url_for('static', filename='markdown-editor.css') }}" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+<style>
+    @media print {
+        .no-print, .main-sidebar, .main-header, .main-footer { display: none !important; }
+        .content-wrapper { margin-left: 0 !important; padding: 0 !important; }
+    }
+    .markdown-content pre {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 5px;
+        overflow-x: auto;
+        border: 1px solid #dee2e6;
+    }
+</style>
+{% endblock %}
 
-        /* Specific sizing just for the sticky sidebar buttons if needed */
-        .sticky-buttons .btn,
-        .sticky-buttons a {
-            min-width: 180px;
-        }
+{% block content %}
+<div class="row mb-3 align-items-center">
+    <div class="col-md-8">
+        <h3 class="m-0 font-weight-bold text-dark">
+            Ticket #{{ ticket.id }}: {{ ticket.subject }}
+        </h3>
+    </div>
+    <div class="no-print col-md-4 text-md-right mt-2 mt-md-0">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-times mr-1"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
 
-        @media (max-width: 1750px) {
-            .sticky-buttons {
-                display: none;
-            }
-            .hamburger-menu {
-                display: block;
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 1050;
-            }
-            .menu-content {
-                display: none;
-                position: fixed;
-                top: 60px;
-                right: 20px;
-                background-color: #fff;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                padding: 10px;
-                flex-direction: column;
-                gap: 10px;
-            }
-        }
-        @media (min-width: 1751px) {
-            .hamburger-menu {
-                display: none;
-            }
-        }
-        @media print {
-            .no-print {
-                display: none;
-            }
-        }
-
-        /* Markdown content styles */
-        .markdown-content {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            border-left: 4px solid #007bff;
-            margin: 10px 0;
-        }
-
-        .markdown-content h1,
-        .markdown-content h2,
-        .markdown-content h3,
-        .markdown-content h4,
-        .markdown-content h5,
-        .markdown-content h6 {
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-            color: #333;
-        }
-
-        .markdown-content ul,
-        .markdown-content ol {
-            margin: 0.5rem 0;
-            padding-left: 1.5rem;
-        }
-
-        .markdown-content code {
-            background-color: #e9ecef;
-            padding: 0.2rem 0.4rem;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.875em;
-        }
-
-        .markdown-content pre {
-            background-color: #f8f9fa;
-            padding: 1rem;
-            border-radius: 5px;
-            overflow-x: auto;
-            margin: 1rem 0;
-        }
-
-        .markdown-content pre code {
-            background: none;
-            padding: 0;
-        }
-
-        .markdown-content blockquote {
-            border-left: 4px solid #dee2e6;
-            padding-left: 1rem;
-            margin: 1rem 0;
-            color: #6c757d;
-            font-style: italic;
-        }
-
-        .markdown-content table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 1rem 0;
-        }
-
-        .markdown-content th,
-        .markdown-content td {
-            border: 1px solid #dee2e6;
-            padding: 0.5rem;
-            text-align: left;
-        }
-
-        .markdown-content th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-        }
-
-        /* Code block styling for display view */
-        .markdown-content pre {
-            background-color: #f6f8fa;
-            border-radius: 6px;
-            padding: 1rem;
-            overflow-x: auto;
-            margin: 1rem 0;
-            border: 1px solid #e1e4e8;
-            position: relative;
-        }
-
-        .markdown-content pre code {
-            background: none;
-            padding: 0;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.875rem;
-            line-height: 1.45;
-            color: #24292e;
-            display: block;
-            white-space: pre;
-        }
-
-        .markdown-content code {
-            background-color: #f6f8fa;
-            border-radius: 3px;
-            padding: 0.2rem 0.4rem;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.875em;
-            color: #e36209;
-            border: 1px solid #e1e4e8;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Ticket Details</h2>
-
-    <!-- Flash messages for success or errors -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="alert alert-{{ messages[0][0] }} d-flex align-items-center fade show" role="alert"">
-                {{ messages[0][1] }}
-                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="row">
+    <!-- Left Column: Details & Description -->
+    <div class="col-lg-8">
+        <div class="card card-outline card-primary shadow-sm mb-4">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                <h5 class="card-title font-weight-bold m-0"><i class="fas fa-ticket-alt mr-2 text-primary"></i>Ticket Description</h5>
+                <div>
+                    <span class="no-print badge {% if ticket.priority == 'Important-Urgent' %}badge-danger{% elif ticket.priority == 'Important-NotUrgent' %}badge-warning{% else %}badge-success{% endif %} px-2 py-1">
+                        {{ ticket.priority }}
+                    </span>
+                    <span class="badge badge-info px-2 py-1 ml-1">{{ ticket.status }}</span>
+                </div>
             </div>
-        {% endif %}
-    {% endwith %}
+            <div class="card-body">
+                <div class="markdown-content p-3 bg-light rounded border border-left-primary">
+                    {{ ticket.description | markdown | safe }}
+                </div>
 
-        <!-- Ticket Details Section -->
-        <div class="row">
-            <!-- Left Column -->
-            <div class="col-md-6">
-                <p><strong>Subject:</strong> {{ ticket.subject }}</p>
-                <p><strong>Description:</strong></p>
-                <div class="markdown-content">{{ ticket.description | markdown | safe }}</div>
                 {% if ticket.gmail_message_id %}
-                    <p>
-                        <strong>Original Email:</strong>
-                        <a href="https://mail.google.com/mail/u/1/#inbox/{{ ticket.gmail_message_id }}" target="_blank" style="white-space: nowrap;">
-                            View in Gmail
+                    <div class="mt-3">
+                        <strong><i class="fab fa-google text-danger mr-1"></i> Original Email:</strong>
+                        <a href="https://mail.google.com/mail/u/1/#inbox/{{ ticket.gmail_message_id }}" target="_blank" class="btn btn-outline-danger btn-xs ml-2">
+                            View in Gmail <i class="fas fa-external-link-alt ml-1"></i>
                         </a>
-                    </p>
+                    </div>
                 {% endif %}
-                <p><strong>Status:</strong> {{ ticket.status }}</p>
-                <p class="no-print"><strong>Priority:</strong> {{ ticket.priority }}</p>
-                <p><strong>Requestor Email:</strong> {{ ticket.requestor_email }}</p>
+
+                <div class="mt-3 small text-muted">
+                    <strong>Requestor Email:</strong> {{ ticket.requestor_email }}
+                </div>
+
                 {% if ticket.requestor_email %}
                     {% set meeting_title = COMPANY_NAME ~ " - Ticket #" ~ ticket.id ~ " - " ~ ticket.subject %}
                     {% set meeting_body = "Details: " ~ ticket.description %}
-
-                    <a href="https://calendar.google.com/calendar/u/0/r/eventedit?add={{ ticket.requestor_email }}&text={{ meeting_title | urlencode }}&details={{ meeting_body | urlencode }}"
-                    target="_blank"
-                    class="btn btn-outline-primary mt-2 w-100 no-print">
-                        📅 Schedule Google Meet
-                    </a>
-
-                    <a href="https://outlook.office.com/calendar/0/deeplink/compose?to={{ ticket.requestor_email }}&subject={{ meeting_title | urlencode }}&body={{ meeting_body | urlencode }}"
-                    target="_blank"
-                    class="btn btn-outline-info mt-2 w-100 no-print">
-                        📆 Schedule Teams Meeting
-                    </a>
-                {% endif %}
-            </div>
-
-            <!-- Right Column -->
-            <div class="col-md-6">
-                <p><strong>Due Date:</strong>
-                    {% if ticket.due_date %}
-                        {{ ticket.due_date.strftime('%m/%d/%y %H:%M') if ticket.due_date.__class__.__name__ == 'datetime' else 'Not Set' }}
-                    {% else %}
-                        N/A
-                    {% endif %}
-                </p>
-                <p><strong>Estimated Hours:</strong> {{ ticket.estimated_hours }}</p>
-                <p><strong>Billable Status:</strong> {{ "Billable" if ticket.billable == "R" else "Non-Billable" }}</p>
-                <p>
-                    <strong>Assigned Tech:</strong> 
-                    {% if ticket.assigned_tech %}
-                        <span class="badge bg-primary">{{ ticket.assigned_tech.username }}</span>
-                    {% else %}
-                        <span class="badge bg-secondary text-muted">Unassigned</span>
-                    {% endif %}
-                </p>
-                {% if ticket.complete %}
-                    <p><strong>Completed At:</strong> {{ ticket.completed_at.strftime('%m/%d/%y %H:%M') }}</p>
+                    <div class="row mt-3 no-print">
+                        <div class="col-md-6 mb-2">
+                            <a href="https://calendar.google.com/calendar/u/0/r/eventedit?add={{ ticket.requestor_email }}&text={{ meeting_title | urlencode }}&details={{ meeting_body | urlencode }}"
+                               target="_blank" class="btn btn-outline-primary btn-sm btn-block">
+                                <i class="far fa-calendar-plus mr-1"></i> Schedule Google Meet
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <a href="https://outlook.office.com/calendar/0/deeplink/compose?to={{ ticket.requestor_email }}&subject={{ meeting_title | urlencode }}&body={{ meeting_body | urlencode }}"
+                               target="_blank" class="btn btn-outline-info btn-sm btn-block">
+                                <i class="far fa-calendar-alt mr-1"></i> Schedule Teams Meeting
+                            </a>
+                        </div>
+                    </div>
                 {% endif %}
             </div>
         </div>
-
-        <hr>
 
         <!-- Notes Section -->
-        <h3>Notes</h3>
-        {% if ticket.notes %}
-            <ul class="list-group">
-                {% for note in ticket.notes %}
-                    <li class="list-group-item">
-                        <div>
-                            <p><strong>Note Start Time:</strong> {{ note.note_start_time.strftime('%Y-%m-%d %H:%M') if note.note_start_time else 'Not started' }}</p>
-                            <p><strong>Note Finish Time:</strong> {{ note.note_finish_time.strftime('%Y-%m-%d %H:%M') if note.note_finish_time else 'Not finished' }}</p>
-                            <p><strong>Time Spent:</strong>
-                                {% if note.note_start_time and note.note_finish_time %}
-                                    {% set time_spent = note.note_finish_time - note.note_start_time %}
-                                    {% set total_minutes = time_spent.total_seconds() // 60 %}
-                                    {% set days = total_minutes // 1440 %}
-                                    {% set hours = (total_minutes % 1440) // 60 %}
-                                    {% set minutes = total_minutes % 60 %}
-
-                                    {% if days > 0 %}{{ days }} days, {% endif %}{{ hours }} hours, {{ minutes }} minutes
-                                {% else %}
-                                    Not available
-                                {% endif %}
-                            </p>
-                            <p><strong>Note Content:</strong></p>
-                            <div class="markdown-content">{{ note.content | markdown | safe }}</div>
-                            <p class="mb-1 text-primary">
-                                <strong><i class="fa fa-user"></i>
-                                    {% if note.user %}
-                                        {{ note.user.username }}
-                                    {% else %}
-                                        System / Unknown
-                                    {% endif %}
-                                </strong>
-                            </p>
-                            {% if note.is_resolution %}
-                                <span class="badge bg-success mb-2">Resolution</span>
-                            {% endif %}
-
-                            <div class="d-flex align-items-center gap-2 mb-3">
-                                <a href="{{ url_for('edit_note', note_id=note.id) }}" class="btn btn-warning no-print">Edit Note</a>
-                                <form method="POST" action="{{ url_for('toggle_resolution', note_id=note.id) }}" class="m-0">
-                                    <button type="submit" class="btn btn-outline-info">
+        <div class="card card-outline card-secondary shadow-sm mb-4">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                <h5 class="card-title font-weight-bold m-0"><i class="fas fa-comments mr-2 text-secondary"></i>Ticket Notes</h5>
+                <span class="badge badge-light border">{{ ticket.notes | length }} Notes</span>
+            </div>
+            <div class="card-body">
+                {% if ticket.notes %}
+                    <div class="timeline timeline-inverse">
+                        {% for note in ticket.notes %}
+                            <div>
+                                <i class="fas {% if note.is_resolution %}fa-check bg-success{% else %}fa-comment bg-info{% endif %}"></i>
+                                <div class="timeline-item shadow-sm">
+                                    <span class="time small text-muted">
+                                        <i class="far fa-clock mr-1"></i>
+                                        {{ note.note_start_time.strftime('%Y-%m-%d %H:%M') if note.note_start_time else 'Not set' }}
+                                        to
+                                        {{ note.note_finish_time.strftime('%Y-%m-%d %H:%M') if note.note_finish_time else 'Not set' }}
+                                    </span>
+                                    <h3 class="timeline-header font-weight-bold">
+                                        <i class="fas fa-user text-primary mr-1"></i>
+                                        {% if note.user %}{{ note.user.username }}{% else %}System / Unknown{% endif %}
                                         {% if note.is_resolution %}
-                                            Unmark as Resolution
-                                        {% else %}
-                                            Mark as Resolution
+                                            <span class="badge badge-success ml-2">Resolution Note</span>
                                         {% endif %}
-                                    </button>
-                                </form>
+                                    </h3>
+                                    <div class="timeline-body">
+                                        <div class="markdown-content">{{ note.content | markdown | safe }}</div>
+                                    </div>
+                                    <div class="timeline-footer no-print d-flex align-items-center gap-2">
+                                        <a href="{{ url_for('edit_note', note_id=note.id) }}" class="btn btn-warning btn-xs mr-2">
+                                            <i class="fas fa-edit mr-1"></i> Edit Note
+                                        </a>
+                                        <form method="POST" action="{{ url_for('toggle_resolution', note_id=note.id) }}" class="d-inline">
+                                            <button type="submit" class="btn btn-outline-info btn-xs">
+                                                {% if note.is_resolution %}Unmark Resolution{% else %}Mark as Resolution{% endif %}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
-
-                        </div>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p>No notes for this ticket yet.</p>
-        {% endif %}
-
-        <hr>
-
-        <!-- Add a Note Form -->
-        <h3 class="no-print">Add a Note</h3>
-        <form method="POST" class="no-print">
-            {{ note_form.hidden_tag() }}
-            <input type="hidden" name="form_name" value="note_form">
-
-            <div class="mb-3">
-                {{ note_form.content.label(class="form-label") }}
-                {{ note_form.content(class="form-control markdown-editor", rows=6, placeholder="Enter your note (supports markdown formatting)") }}
-                <div id="note-preview" class="markdown-preview" style="display: none;"></div>
-                {% if note_form.content.errors %}
-                    <div class="text-danger">{{ note_form.content.errors[0] }}</div>
-                {% endif %}
-            </div>
-
-            <div class="mb-3">
-                {{ note_form.note_start_time.label(class="form-label") }}
-                {{ note_form.note_start_time(class="form-control") }}
-            </div>
-
-            <div class="mb-3">
-                {{ note_form.note_finish_time.label(class="form-label") }}
-                {{ note_form.note_finish_time(class="form-control") }}
-            </div>
-
-            <button type="submit" name="send_email" value="true" class="btn btn-primary">Add Note and Send Email</button>
-            <button type="submit" name="send_email" value="false" class="btn btn-secondary">Add Internal Note</button>
-        </form>
-    </div>
-
-    <!-- Sticky Buttons -->
-    <div class="sticky-buttons">
-        <form method="POST" action="{{ url_for('complete_ticket', id=ticket.id) }}">
-            <button type="submit" name="complete" class="btn btn-success w-100">Mark Complete</button>
-        </form>
-        <a href="{{ url_for('edit_ticket', id=ticket.id) }}" class="btn btn-warning w-100">Edit Ticket</a>
-        <a href="#" class="btn btn-secondary w-100" onclick="window.close(); return false;">Back to Dashboard</a>
-        <a href="{{ url_for('select_project', ticket_id=ticket.id) }}" class="btn btn-warning w-100">Convert to Project Ticket</a>
-        <form method="POST" action="{{ url_for('toggle_billable', ticket_id=ticket.id) }}">
-            <button type="submit" class="btn btn-success w-100">
-                {% if ticket.billable == "NB" %}
-                    Mark as Billable
+                        {% endfor %}
+                    </div>
                 {% else %}
-                    Mark as Non-Billable
+                    <p class="text-muted text-center my-3">No notes recorded for this ticket yet.</p>
                 {% endif %}
-            </button>
-        </form>
+            </div>
+        </div>
 
-        <button type="button" class="btn btn-info w-100" onclick="scrollToBottom()">Add a Note</button>
-        <button type="button"
-                class="btn btn-danger w-100"
-                onclick="
-                    const originalTitle = document.title;
-                    document.title = 'RVA IT Ticket {{ ticket.id }} - {{ ticket.subject|replace("'", "")|replace('"', '') }}';
-                    window.print();
-                    setTimeout(() => { document.title = originalTitle; }, 1000);
-                ">
-            Print Ticket
-        </button>
+        <!-- Add Note Form -->
+        <div class="card card-outline card-success shadow-sm mb-4 no-print" id="addNoteCard">
+            <div class="card-header bg-white">
+                <h5 class="card-title font-weight-bold m-0"><i class="fas fa-plus-circle mr-2 text-success"></i>Add Note</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ note_form.hidden_tag() }}
+                    <input type="hidden" name="form_name" value="note_form">
 
-    </div>
+                    <div class="form-group">
+                        {{ note_form.content.label(class="font-weight-bold") }}
+                        {{ note_form.content(class="form-control markdown-editor", rows=5, placeholder="Enter note content (supports markdown)...") }}
+                        <div id="note-preview" class="markdown-preview mt-2 p-2 bg-light rounded" style="display: none;"></div>
+                    </div>
 
-    <!-- Hamburger Menu for smaller screens -->
-    <div class="hamburger-menu no-print">
-        <button class="btn btn-dark" onclick="toggleMenu()">☰ Menu</button>
-        <div class="menu-content">
-            <form method="POST" action="{{ url_for('complete_ticket', id=ticket.id) }}">
-                <button type="submit" name="complete" class="btn btn-success w-100">Mark Complete</button>
-            </form>
-            <a href="{{ url_for('edit_ticket', id=ticket.id) }}" class="btn btn-warning w-100">Edit Ticket</a>
-            <a href="#" class="btn btn-secondary w-100" onclick="window.close(); return false;">Back to Dashboard</a>
-            <button type="button" class="btn btn-info w-100" onclick="scrollToBottom()">Add a Note</button>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            {{ note_form.note_start_time.label(class="font-weight-bold") }}
+                            {{ note_form.note_start_time(class="form-control form-control-sm") }}
+                        </div>
+                        <div class="col-md-6 form-group">
+                            {{ note_form.note_finish_time.label(class="font-weight-bold") }}
+                            {{ note_form.note_finish_time(class="form-control form-control-sm") }}
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-2" style="gap: 10px;">
+                        <button type="submit" name="send_email" value="true" class="btn btn-primary btn-sm">
+                            <i class="fas fa-paper-plane mr-1"></i> Add Note & Email Requestor
+                        </button>
+                        <button type="submit" name="send_email" value="false" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-lock mr-1"></i> Add Internal Note Only
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <script>
-        function scrollToBottom() {
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    <!-- Right Column: Meta Info & Actions -->
+    <div class="col-lg-4">
+        <!-- Quick Actions Card -->
+        <div class="card card-outline card-dark shadow-sm mb-4 no-print">
+            <div class="card-header bg-white">
+                <h5 class="card-title font-weight-bold m-0"><i class="fas fa-tools mr-2"></i>Actions</h5>
+            </div>
+            <div class="card-body d-flex flex-column gap-2" style="gap: 10px;">
+                <form method="POST" action="{{ url_for('complete_ticket', id=ticket.id) }}">
+                    <button type="submit" name="complete" class="btn btn-success btn-block font-weight-bold">
+                        <i class="fas fa-check-circle mr-1"></i> Mark Ticket Complete
+                    </button>
+                </form>
+                <a href="{{ url_for('edit_ticket', id=ticket.id) }}" class="btn btn-warning btn-block font-weight-bold">
+                    <i class="fas fa-pencil-alt mr-1"></i> Edit Ticket
+                </a>
+                <a href="{{ url_for('select_project', ticket_id=ticket.id) }}" class="btn btn-info btn-block">
+                    <i class="fas fa-project-diagram mr-1"></i> Convert to Project
+                </a>
+                <form method="POST" action="{{ url_for('toggle_billable', ticket_id=ticket.id) }}">
+                    <button type="submit" class="btn btn-outline-secondary btn-block">
+                        <i class="fas fa-dollar-sign mr-1"></i> Toggle Billable (Current: {{ "Billable" if ticket.billable == "R" else "Non-Billable" }})
+                    </button>
+                </form>
+                <button type="button" class="btn btn-outline-primary btn-block" onclick="scrollToNoteForm()">
+                    <i class="fas fa-comment-medical mr-1"></i> Jump to Add Note
+                </button>
+                <button type="button" class="btn btn-outline-dark btn-block" onclick="printTicket()">
+                    <i class="fas fa-print mr-1"></i> Print Ticket
+                </button>
+            </div>
+        </div>
+
+        <!-- Ticket Metadata Card -->
+        <div class="card card-outline card-info shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title font-weight-bold m-0"><i class="fas fa-info-circle mr-2 text-info"></i>Ticket Overview</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted"><i class="fas fa-user-tag mr-2"></i>Assigned Tech</span>
+                        {% if ticket.assigned_tech %}
+                            <span class="badge badge-primary px-2 py-1">{{ ticket.assigned_tech.username }}</span>
+                        {% else %}
+                            <span class="badge badge-secondary px-2 py-1">Unassigned</span>
+                        {% endif %}
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted"><i class="far fa-calendar-alt mr-2"></i>Due Date</span>
+                        <span>
+                            {% if ticket.due_date %}
+                                {{ ticket.due_date.strftime('%m/%d/%y %H:%M') if ticket.due_date.__class__.__name__ == 'datetime' else 'Not Set' }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted"><i class="far fa-clock mr-2"></i>Estimated Hours</span>
+                        <span class="font-weight-bold">{{ ticket.estimated_hours }} hrs</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted"><i class="fas fa-file-invoice-dollar mr-2"></i>Billing</span>
+                        <span class="badge {% if ticket.billable == 'R' %}badge-success{% else %}badge-secondary{% endif %}">
+                            {{ "Billable" if ticket.billable == "R" else "Non-Billable" }}
+                        </span>
+                    </li>
+                    {% if ticket.complete %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="fas fa-check-double mr-2"></i>Completed At</span>
+                            <span class="small font-weight-bold text-success">{{ ticket.completed_at.strftime('%m/%d/%y %H:%M') }}</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+<script src="{{ url_for('static', filename='markdown-editor.js') }}"></script>
+<script>
+    function scrollToNoteForm() {
+        document.getElementById('addNoteCard').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function printTicket() {
+        const originalTitle = document.title;
+        document.title = 'RVA IT Ticket {{ ticket.id }} - {{ ticket.subject|replace("'", "")|replace('"', '') }}';
+        window.print();
+        setTimeout(() => { document.title = originalTitle; }, 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const noteTextarea = document.querySelector('#content');
+        if (noteTextarea && !noteTextarea.dataset.markdownInitialized) {
+            noteTextarea.dataset.preview = 'note-preview';
+            new MarkdownEditor('content', 'note-preview');
+            noteTextarea.dataset.markdownInitialized = 'true';
         }
-
-        function toggleMenu() {
-            const menuContent = document.querySelector('.menu-content');
-            menuContent.style.display = menuContent.style.display === 'block' ? 'none' : 'block';
-        }
-    </script>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-    <script src="{{ url_for('static', filename='markdown-editor.js') }}"></script>
-    <script>
-        // Initialize markdown editor for note form
-        document.addEventListener('DOMContentLoaded', function() {
-            const noteTextarea = document.querySelector('#content');
-            if (noteTextarea && !noteTextarea.dataset.markdownInitialized) {
-                noteTextarea.dataset.preview = 'note-preview';
-                new MarkdownEditor('content', 'note-preview');
-                noteTextarea.dataset.markdownInitialized = 'true';
-            }
-        });
-
-        // Apply syntax highlighting to existing markdown content
         if (typeof Prism !== 'undefined') {
             Prism.highlightAll();
         }
-    </script>
-</body>
-</html>
+    });
+</script>
+{% endblock %}

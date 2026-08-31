@@ -1,170 +1,132 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create New Ticket</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='markdown-editor.css') }}" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
-    <!-- Add jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-</head>
-<body>
-    <div class="container mt-5">
-        <h2>Create Ticket</h2>
+{% extends "base.html" %}
 
-    <!-- Flash messages for success or errors -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="alert alert-{{ messages[0][0] }} d-flex align-items-center fade show" role="alert"">
-                {{ messages[0][1] }}
-                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+{% block title %}New Ticket | {{ BRAND_NAME or "Helpdesk" }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card card-outline card-success shadow-sm">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                <h4 class="card-title font-weight-bold m-0">
+                    <i class="fas fa-plus-circle text-success mr-2"></i>Create New Ticket
+                </h4>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
+                </a>
             </div>
-        {% endif %}
-    {% endwith %}
 
-        <!-- Ticket Creation Form -->
-        <form method="POST" action="">
-            {{ form.hidden_tag() }}
+            <form method="POST">
+                <div class="card-body">
+                    {{ form.hidden_tag() }}
 
-            <!-- If the ticket is linked to a project, display a message or hidden field -->
-            {% if project_id %}
-                <div class="alert alert-info">
-                    <strong>Project ID:</strong> {{ project_id }}
+                    <div class="form-group">
+                        {{ form.subject.label(class="font-weight-bold") }}
+                        {{ form.subject(class="form-control", placeholder="Brief description of the issue") }}
+                        {% if form.subject.errors %}
+                            <div class="text-danger small mt-1">{{ form.subject.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            {{ form.client_id.label(class="font-weight-bold") }}
+                            {{ form.client_id(class="custom-select", id="clientSelect") }}
+                            {% if form.client_id.errors %}
+                                <div class="text-danger small mt-1">{{ form.client_id.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            {{ form.requestor_email.label(class="font-weight-bold") }}
+                            {{ form.requestor_email(class="form-control", id="requestorEmailInput", placeholder="client@company.com") }}
+                            {% if form.requestor_email.errors %}
+                                <div class="text-danger small mt-1">{{ form.requestor_email.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        {{ form.cc_emails.label(class="font-weight-bold") }}
+                        {{ form.cc_emails(class="form-control", rows=2, placeholder="Additional emails separated by commas") }}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 form-group">
+                            {{ form.assigned_tech_id.label(class="font-weight-bold") }}
+                            {{ form.assigned_tech_id(class="custom-select") }}
+                        </div>
+
+                        <div class="col-md-4 form-group">
+                            {{ form.priority.label(class="font-weight-bold") }}
+                            {{ form.priority(class="custom-select") }}
+                        </div>
+
+                        <div class="col-md-4 form-group">
+                            {{ form.status.label(class="font-weight-bold") }}
+                            {{ form.status(class="custom-select") }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 form-group">
+                            {{ form.phase_id.label(class="font-weight-bold") }}
+                            {{ form.phase_id(class="custom-select") }}
+                        </div>
+
+                        <div class="col-md-4 form-group">
+                            {{ form.due_date.label(class="font-weight-bold") }}
+                            {{ form.due_date(class="form-control", type="date") }}
+                        </div>
+
+                        <div class="col-md-4 form-group">
+                            {{ form.estimated_hours.label(class="font-weight-bold") }}
+                            {{ form.estimated_hours(class="form-control", step="0.1") }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        {{ form.description.label(class="font-weight-bold") }}
+                        {{ form.description(class="form-control", rows=6, placeholder="Detailed ticket notes/description...") }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors[0] }}</div>
+                        {% endif %}
+                    </div>
                 </div>
-                <!-- You can also pass the project_id as a hidden input if needed -->
-                <input type="hidden" name="project_id" value="{{ project_id }}">
-            {% endif %}
 
-            <div class="mb-3">
-                {{ form.subject.label(class="form-label") }}
-                {{ form.subject(class="form-control", placeholder="Enter ticket subject") }}
-                {% if form.subject.errors %}
-                    <div class="text-danger">
-                        {{ form.subject.errors[0] }}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="mb-3">
-                {{ form.description.label(class="form-label") }}
-                {{ form.description(class="form-control markdown-editor", rows=6, placeholder="Describe your issue (supports markdown formatting)") }}
-                <div id="description-preview" class="markdown-preview" style="display: none;"></div>
-                {% if form.description.errors %}
-                    <div class="text-danger">
-                        {{ form.description.errors[0] }}
-                    </div>
-                {% endif %}
-            </div>
-
-            <!-- Client Name Input -->
-            <div class="mb-3">
-                {{ form.client_id.label(class="form-label") }}
-                <select id="client_id" name="client_id" class="form-control">
-                    <option value="">Select Client</option>
-                    {% for client_id, client_name in form.client_id.choices %}
-                        <option value="{{ client_id }}">{{ client_name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <!-- Requestor Email Input -->
-            <div class="mb-3">
-                {{ form.requestor_email.label(class="form-label") }}
-                <input type="email" class="form-control" id="requestor_email" name="requestor_email" placeholder="Requestor email will auto-populate">
-            </div>
-
-            <!-- CC Emails -->
-            <div class="mb-3">
-                {{ form.cc_emails.label(class="form-label") }}
-                {{ form.cc_emails(class="form-control", rows=4) }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.priority.label(class="form-label") }}
-                {{ form.priority(class="form-control") }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.status.label(class="form-label") }}
-                {{ form.status(class="form-control") }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.phase_id.label(class="form-label") }}
-                {{ form.phase_id(class="form-control") }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.due_date.label(class="form-label") }}
-                {{ form.due_date(class="form-control") }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.estimated_hours.label(class="form-label") }}
-                {{ form.estimated_hours(class="form-control") }}
-            </div>
-
-            <div class="form-group mb-3">
-                {{ form.assigned_tech_id.label(class="form-label fw-bold") }}
-                {{ form.assigned_tech_id(class="form-control") }}
-            </div>
-
-            <button type="submit" class="btn btn-primary">Create Ticket</button>
-        </form>
-
-        <!-- Back Button -->
-        {% if project_id %}
-            <a href="{{ url_for('project_dashboard', project_id=project_id) }}" class="btn btn-secondary mt-3">Back to Project Dashboard</a>
-        {% else %}
-            <a href="{{ url_for('dashboard_today') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
-        {% endif %}
+                <div class="card-footer bg-white text-right">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mr-2">Cancel</a>
+                    <button type="submit" class="btn btn-success font-weight-bold px-4">
+                        <i class="fas fa-check mr-1"></i> Create Ticket
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
+</div>
+{% endblock %}
 
-    <!-- jQuery Script to populate the requestor email based on client selection -->
-    <script>
-        $(document).ready(function() {
-            $('#client_id').change(function() {
-                var clientId = $(this).val();  // Get selected client ID
-                if (clientId) {
-                    $.ajax({
-                        url: "{{ url_for('get_client_email') }}",  // Flask route to get client email
-                        type: 'GET',
-                        data: { client_id: clientId },
-                        success: function(response) {
-                            $('#requestor_email').val(response.email);  // Update the email field
-                        }
-                    });
-                } else {
-                    $('#requestor_email').val('');  // Clear email if no client is selected
+{% block extra_js %}
+<script>
+    // Automatically populate requestor_email when requestor select changes
+    document.addEventListener("DOMContentLoaded", function() {
+        const clientSelect = document.getElementById("clientSelect");
+        const emailInput = document.getElementById("requestorEmailInput");
+
+        if (clientSelect) {
+            clientSelect.addEventListener("change", function() {
+                const clientId = this.value;
+                if (clientId && clientId !== "0") {
+                    fetch(`/get_client_email?client_id=${clientId}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.email) {
+                                emailInput.value = data.email;
+                            }
+                        })
+                        .catch(err => console.error("Error fetching email:", err));
                 }
             });
-        });
-    </script>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-    <script src="{{ url_for('static', filename='markdown-editor.js') }}"></script>
-    <script>
-        // Initialize markdown editor for description form
-        document.addEventListener('DOMContentLoaded', function() {
-            const descriptionTextarea = document.querySelector('#description');
-            if (descriptionTextarea && !descriptionTextarea.dataset.markdownInitialized) {
-                descriptionTextarea.dataset.preview = 'description-preview';
-                new MarkdownEditor('description', 'description-preview');
-                descriptionTextarea.dataset.markdownInitialized = 'true';
-            }
-        });
-    </script>
-</body>
-</html>
+        }
+    });
+</script>
+{% endblock %}
