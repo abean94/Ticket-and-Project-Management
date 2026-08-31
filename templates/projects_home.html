@@ -18,7 +18,7 @@
     {% endwith %}
     <h2>Projects</h2>
     <a href="{{ url_for('create_project') }}" class="btn btn-primary">Create Project</a>
-    <a href="{{ url_for('dashboard_today') }}" class="btn btn-secondary">Back to Dashboard</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
     
     <ul class="list-group mt-4">
         {% for project in projects %}

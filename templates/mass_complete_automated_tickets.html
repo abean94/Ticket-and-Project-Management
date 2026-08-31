@@ -119,7 +119,7 @@
                     <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to complete the selected tickets? This action cannot be undone.')">
                         <i class="fas fa-check"></i> Complete Selected Tickets
                     </button>
-                    <a href="{{ url_for('dashboard_today') }}" class="btn btn-secondary">Cancel</a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
         {% else %}
@@ -128,7 +128,7 @@
                 <p>No open tickets matching automated script patterns were found.</p>
                 <p>Automated tickets are identified by keywords in the subject line such as: automated, script, cron, scheduled, backup, sync, update, maintenance, monitoring, health check, status, report, log, scan, cleanup, archive</p>
             </div>
-            <a href="{{ url_for('dashboard_today') }}" class="btn btn-primary">Back to Dashboard</a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
         {% endif %}
     </div>
 

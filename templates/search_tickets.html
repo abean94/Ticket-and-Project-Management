@@ -27,13 +27,12 @@
   {% endwith %}
   <nav class="navbar navbar-expand-lg navbar-dark navbar-custom" style="background:#343a40;">
     <div class="container-fluid">
-      <a class="navbar-brand ms-3" href="{{ url_for('dashboard_today') }}">
+      <a class="navbar-brand ms-3" href="{{ url_for('dashboard') }}">
         <img src="{{ BRAND_LOGO_PATH }}" alt="Logo" style="height: 30px; margin-right: 10px; border-radius: 50%;">
         {{ BRAND_NAME }}
       </a>
       <div class="ms-auto">
         <a href="{{ url_for('dashboard') }}" class="nav-link d-inline text-white">All Tickets</a>
-        <a href="{{ url_for('dashboard_today') }}" class="nav-link d-inline text-white">Today</a>
       </div>
     </div>
   </nav>
