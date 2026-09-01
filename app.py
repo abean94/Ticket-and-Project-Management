@@ -506,7 +506,7 @@ def new_ticket():
         elif from_dashboard:
             return redirect(url_for("dashboard"))
         else:
-            return redirect(url_for("dashboard_today"))
+            return redirect(url_for("dashboard"))
 
     return render_template(
         "new_ticket.html", form=form, project_id=project_id, phase_id=phase_id
@@ -1490,7 +1490,7 @@ def create_client():
 
         db.session.commit()
         flash("Client created successfully!", "success")
-        return redirect(url_for("dashboard_today"))
+        return redirect(url_for("dashboard"))
 
     return render_template("create_client.html", form=form)
 
@@ -1972,7 +1972,7 @@ def mass_complete_automated_tickets():
     # Check if user is admin
     if current_user.role != "admin":
         flash("Access denied. Admin privileges required.", "error")
-        return redirect(url_for("dashboard_today"))
+        return redirect(url_for("dashboard"))
 
     if request.method == "POST":
         # Get ticket IDs from form
@@ -1997,7 +1997,7 @@ def mass_complete_automated_tickets():
 
         db.session.commit()
         flash(f"Successfully completed {completed_count} automated tickets.", "success")
-        return redirect(url_for("dashboard_today"))
+        return redirect(url_for("dashboard"))
 
     # GET request - show form
     # Get tickets that are likely from automated scripts (based on subject patterns)
