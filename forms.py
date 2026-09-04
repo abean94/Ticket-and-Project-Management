@@ -158,6 +158,7 @@ class ProjectForm(FlaskForm):
         choices=[
             ("Open", "Open"),
             ("In Progress", "In Progress"),
+            ("On Hold", "On Hold"),
             ("Closed", "Closed"),
         ],
         validators=[InputRequired()],
@@ -175,6 +176,7 @@ class PhaseForm(FlaskForm):
         choices=[
             ("Open", "Open"),
             ("In Progress", "In Progress"),
+            ("On Hold", "On Hold"),
             ("Closed", "Closed"),
         ],
         validators=[InputRequired()],
