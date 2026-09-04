@@ -34,7 +34,7 @@ class Ticket(db.Model):
     cc_emails = db.Column(db.Text, nullable=True)
     description = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(50), nullable=False, default="Open")
-    priority = db.Column(db.String(50), nullable=False, default="Important-NotUrgent")
+    priority = db.Column(db.String(50), default='Medium')
     billable = db.Column(db.String(50), nullable=False, default="NB")
 
     qbo_invoice_id = db.Column(db.String(100), nullable=True)

@@ -67,11 +67,12 @@ class TicketForm(FlaskForm):
     priority = SelectField(
         "Priority",
         choices=[
-            ("Important-Urgent", "Important-Urgent"),
-            ("Important-NotUrgent", "Important-NotUrgent"),
-            ("NotImportant-Urgent", "NotImportant-Urgent"),
-            ("NotImportant-NotUrgent", "NotImportant-NotUrgent"),
+            ("Critical", "Critical"),
+            ("High", "High"),
+            ("Medium", "Medium"),
+            ("Low", "Low"),
         ],
+        default='Medium',
         validators=[InputRequired()],
     )
     status = SelectField(
@@ -116,11 +117,12 @@ class UpdateTicketForm(FlaskForm):
     priority = SelectField(
         "Priority",
         choices=[
-            ("Important-Urgent", "Important-Urgent"),
-            ("Important-NotUrgent", "Important-NotUrgent"),
-            ("NotImportant-Urgent", "NotImportant-Urgent"),
-            ("NotImportant-NotUrgent", "NotImportant-NotUrgent"),
+            ("Critical", "Critical"),
+            ("High", "High"),
+            ("Medium", "Medium"),
+            ("Low", "Low"),
         ],
+        default='Medium',
         validators=[InputRequired()],
     )
     phase_id = SelectField(

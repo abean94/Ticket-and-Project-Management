@@ -136,7 +136,7 @@
                                 <input type="checkbox" name="ticket_ids" value="{{ ticket.id }}" class="ticket-select-checkbox">
                             </td>
                             <td class="text-center align-middle">
-                                <span class="badge {% if ticket.priority == 'Important-Urgent' %}badge-danger{% elif ticket.priority == 'Important-NotUrgent' %}badge-warning{% else %}badge-success{% endif %} p-2" onclick="openEditWindow('{{ url_for('edit_ticket', id=ticket.id) }}')" style="cursor: pointer; border-radius: 50%;">
+                                <span class="badge {% if ticket.priority == 'Critical' %}badge-danger{% elif ticket.priority == 'High' %}badge-warning{% else %}badge-success{% endif %} p-2" onclick="openEditWindow('{{ url_for('edit_ticket', id=ticket.id) }}')" style="cursor: pointer; border-radius: 50%;">
                                     <i class="fas {% if ticket.status == 'Closed' or ticket.status == 'Completed' %}fa-check{% else %}fa-info-circle{% endif %}"></i>
                                 </span>
                             </td>
