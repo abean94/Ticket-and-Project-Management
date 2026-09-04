@@ -317,10 +317,10 @@ def dashboard():
                 (Ticket.status == "Closed", 4),
             ).asc(),
             db.case(
-                (Ticket.priority == "Important-Urgent", 1),
-                (Ticket.priority == "Important-NotUrgent", 2),
-                (Ticket.priority == "NotImportant-Urgent", 3),
-                (Ticket.priority == "NotImportant-NotUrgent", 4),
+                (Ticket.priority == "Critical", 1),
+                (Ticket.priority == "High", 2),
+                (Ticket.priority == "Medium", 3),
+                (Ticket.priority == "Low", 4),
             ).asc(),
         )
         .all()
